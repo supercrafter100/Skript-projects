@@ -1,0 +1,202 @@
+#Voteparty by supercrafter100
+#Version: V1
+#You may use this script and edit it to your preference as long as I get credits 
+#(this can be ingame or just leave my credentials in the script) 
+
+
+#So I guess you already figured out EULA is pretty garbage if it comes to vote2win
+#Thats why I made a voteparty script wich is free to use for everyone
+#It probably isnt the most efficient method of doing it but I tried my best
+#I reccommend reading trough the config and changing messages / settings to your preference.
+#Have fun!
+
+
+options:
+    #some options
+    #commands that get run when the voteparty gets initiated (space them out with a ",".)
+
+    votePartyCommands: /crate key all physical test, /broadcast everyone got a key!
+    #Amount of votes required for a voteparty
+    votesRequired: 10
+
+
+
+    #Reset votes on voteparty reach. If true, votes will get reset.
+    #for example. The server reaches x amount votes and the voteparty gets initiated. The vote count will go back to 0
+    #If false, it will keep counting and every x amount of votes it will initiate the voteparty
+    # WARNING: DO NOT CHANGE WHEN THE SYSTEM IS ALREADY USED IT WILL BREAK
+    resetVotesOnParty: true
+
+    #if the setting above is false, Should we reset the counter every day?
+    resetVotesEveryDay: false
+
+    #messages (the placeholders will be displayed above it, to use a new line, type %nl% in the message)
+
+
+    #---> These messages will only be used if resetVotesOnParty is true!
+    #Placeholder(s): 
+    #   [votesremain] -> displays the amount of votes needed for a voteparty
+
+    false_voteMessage: &eWe got a vote! We need &6&l[votesremain] &emore votes for a voteparty!
+
+    #Placeholder(s): 
+    #   [goal] -> displays the goal that had to be reached
+    #   [votesremain] -> displays the amount of votes needed for a new voteparty
+
+    false_voteParty: &eWe reached the goal of &6&l[goal] &evotes! Voteparty time!
+
+    #---> These messages will only be used if resetVotesOnParty is false!
+
+    #Placeholder(s):
+    #   [current] -> displays the current amount of votes
+    #   [max] -> displays the votes for the next voteparty
+    true_voteParty: &eWe reached our goal of &6&l[current] &evotes! Voteparty time! %nl%&7(the next voteparty will be done at [max] votes!)
+    
+    #---> These messages will only be used if resetVotesOnParty is true!
+    #Placeholder(s): 
+    #   [votesremain] -> displays the amount of votes needed for a voteparty
+
+    true_voteMessage: &eWe got a vote! We need &6&l[votesremain] &emore votes for a voteparty!
+
+
+
+#---------------[ Main cmd ]-----------------
+command /addvote [<offline player>]:
+    permission: votes.admin
+    trigger:
+        arg-1 is set
+        add 1 to {votes::%arg-1's uuid%}
+        add 1 to {TotalVotes}
+
+        set {_temp} to "{@resetVotesOnParty}" parsed as a boolean
+        set {_remaining} to votes_getRemaining({_temp})
+        if {_remaining} = 0:
+            set {_temp} to "{@resetVotesOnParty}" parsed as a boolean
+            if {_temp} = true:
+                votes_votePartyInitiate(true)
+            
+            if {_temp} = false:
+                votes_votePartyInitiate(false)
+
+        else:
+            set {_temp} to "{@resetVotesOnParty}" parsed as a boolean
+            if {_temp} is true:
+                votes_sendMainMessage(true)
+            if {_temp} is false:
+                votes_sendMainMessage(false)
+
+
+
+
+function votes_sendMainMessage(reset: boolean):
+    if {_reset} is true:
+        set {_remaining} to votes_getRemaining(true)
+        set {_random} to "{@true_voteMessage}"
+        set {_message} to ReplacePlaceholder({_random}, "[votesremain]", "%{_remaining}%")
+        broadcast "%{_message}%"
+
+    if {_reset} is false:
+        set {_remaining} to votes_getRemaining(false)
+        set {_random} to "{@false_voteMessage}"
+        set {_message} to ReplacePlaceholder({_random}, "[votesremain]", "%{_remaining}%")
+        broadcast "%{_message}%"
+
+#-------------[Quick api shit ]---------------------
+
+function ReplacePlaceholder(text: text, placeholder: text, replacement: text) :: object:
+
+    replace all {_placeholder} with {_replacement} in {_text}
+
+    return {_text}
+
+
+function votes_getRemaining(reset: boolean) :: object:
+    if {_reset} = true:
+        set {_return} to ({@votesRequired} - {TotalVotes})
+    
+    if {_reset} = false:
+        set {_return} to ({nextParty} - {TotalVotes})
+    
+    return {_return}
+
+
+
+#---------------------[ VoteParty ]-------------------
+function votes_votePartyInitiate(reset: boolean):
+
+    if {_reset} = true:
+        #resetting votes
+        set {TotalVotes} to 0
+        
+        #Running over first placeholder
+        set {_max} to "{@votesRequired}"
+        set {_random} to "{@false_voteParty}"
+        set {_message} to ReplacePlaceholder({_random}, "[goal]", {_max}) 
+
+        #Running over 2nd placeholder
+        set {_remaining} to votes_getRemaining(true)
+        set {_message} to ReplacePlaceholder({_message}, "[votesremain]", "%{_remaining}%")
+
+        #final message
+        broadcast "%{_message}%"
+
+        #Running commands
+        set {_rawcommands} to "{@votePartyCommands}"
+        set {_splitCmds::*} to {_rawcommands} split by ", "
+        loop {_splitCmds::*}:
+            execute console command "%loop-value%" 
+    
+    if {_reset} = false:
+        set {_currentvotes} to {nextParty}
+        set {nextParty} to ({nextParty} + {@votesRequired})
+        
+        #running first placeholder
+        set {_max} to {nextParty}
+
+        set {_random1} to "{@true_voteParty}"
+
+        set {_message} to ReplacePlaceholder({_random1}, "[current]", "%{_currentvotes}%")
+
+        #running second placeholder
+        set {_message} to ReplacePlaceholder({_message} , "[max]", "%{_max}%")
+
+        broadcast "%{_message}%"
+
+        set {_rawcommands} to "{@votePartyCommands}"
+        set {_splitCmds::*} to {_rawcommands} split by ", "
+        loop {_splitCmds::*}:
+            execute console command "%loop-value%" 
+
+
+
+on load:
+    if {nextParty} is not set:
+        set {nextParty} to {@votesRequired}
+    
+    if {@resetVotesEveryDay} is true:
+        if {votesResetTime} is not set:
+            set {votesResetTime} to 1 day from now
+
+every minute:
+    {@resetVotesEveryDay} is true:
+    if now > {votesResetTime}:
+        set {votesResetTime} to 1 day from now
+        set {TotalVotes} to 0
+        set {nextParty} to {@votesRequired}
+        message "Votes have been reset" to console
+
+
+command /voteparty [<string>]:
+    permission: voteparty.admin
+    trigger:
+        if arg 1 is set:
+            if arg 1 is "reset":
+                set {TotalVotes} to 0
+                set {nextParty} to {@votesRequired}
+                message "&cReset the votes"
+                stop
+        
+        else:
+            message "========voteparty========"
+            message "/voteparty reset"
+            message "========================="
