@@ -1,5 +1,5 @@
 #Voteparty by supercrafter100
-#Version: V1
+#Version: V1.1
 #You may use this script and edit it to your preference as long as I get credits 
 #(this can be ingame or just leave my credentials in the script) 
 
@@ -10,6 +10,16 @@
 #I reccommend reading trough the config and changing messages / settings to your preference.
 #Have fun!
 
+#Placeholders can only be used in the messages in the config. Nowhere else
+
+#PLACEHOLDERS FOR SCOREBOARDS:
+#DISCLAIMER: You need ersatz (plugin) for this to work. The placeholders dont update themselves. 
+#They have to be requested. (with refreshing the scoreboard etc.)
+#if the scoreboard is in skript, double the percentage symbol
+
+# - %voteparty_remaining%
+# - %voteparty_totalvotes%
+# - %voteparty_nextparty%
 
 options:
     #some options
@@ -25,7 +35,7 @@ options:
     #for example. The server reaches x amount votes and the voteparty gets initiated. The vote count will go back to 0
     #If false, it will keep counting and every x amount of votes it will initiate the voteparty
     # WARNING: DO NOT CHANGE WHEN THE SYSTEM IS ALREADY USED IT WILL BREAK
-    resetVotesOnParty: true
+    resetVotesOnParty: false
 
     #if the setting above is false, Should we reset the counter every day?
     resetVotesEveryDay: false
@@ -61,7 +71,7 @@ options:
 
 
 #---------------[ Main cmd ]-----------------
-command /addvote [<offline player>]:
+command /voteParty_addvote [<offline player>]:
     permission: votes.admin
     trigger:
         arg-1 is set
@@ -200,3 +210,26 @@ command /voteparty [<string>]:
             message "========voteparty========"
             message "/voteparty reset"
             message "========================="
+
+
+#========[ Placeholders ]================
+
+on placeholder request with prefix "votepary":
+    if the identifier is "remaining":
+        if {@resetVotesOnParty} = false:
+            set the result to "%votes_getRemaining(false)%"
+        
+        if {@resetVotesOnParty} = true:
+            set the result to "%votes_getRemaining(true)%"
+    
+    else if the identifier is "totalvotes":
+        set the result to "%{TotalVotes}%"
+    
+    else if the identifier is "nextparty":
+        if {resetVotesOnParty} = false:
+            set the result to "%{nextParty}%"
+        
+        if {resetVotesOnParty} = true:
+            set the result to "{@votesRequired}"
+    
+    
