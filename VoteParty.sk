@@ -214,7 +214,7 @@ command /voteparty [<string>]:
 
 #========[ Placeholders ]================
 
-on placeholder request with prefix "votepary":
+on placeholder request with prefix "voteparty":
     if the identifier is "remaining":
         if {@resetVotesOnParty} = false:
             set the result to "%votes_getRemaining(false)%"
