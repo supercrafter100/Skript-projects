@@ -71,16 +71,14 @@ command /whitelist [<string>] [<text>] :
 						
 						set {_p} to arg-2 parsed as an offline player
 
-						set {_r} to whitelist_addPlayer({_P})
-
-						if {_r} is not set:
-							message "{@prefix} Successfully added &b%{_p}% &7to the whitelist"
-						
+						if {whitelist::players::*} contains {_P}:
+							message "{@prefix} Player is already whitelisted"
+							stop					
+	
 						else:
-							message "&7&l&m----------------------"
-							message "&c&lERROR"
-							message "&c%{_r}%"
-							message "&7&l&m----------------------"
+
+							add "%{_p}%" to {whitelist::players::*}
+							message "{@prefix} Added &b%{_p}% &7to the whitelist"
 							stop
 					else:
 						message "{@prefix} Please provide a player to add to the whitelisted players"
@@ -91,16 +89,14 @@ command /whitelist [<string>] [<text>] :
 						
 						set {_p} to arg-2 parsed as an offline player
 
-						set {_r} to whitelist_removePlayer({_P})
-
-						if {_r} is not set:
-							message "{@prefix} Successfully removed &b%{_p}% &7from the whitelist"
-						
+						if {whitelist::players::*} does not contain "%{_P}%":
+							message "{@prefix} Player is not whitelisted"
+							stop
+	
 						else:
-							message "&7&l&m----------------------"
-							message "&c&lERROR"
-							message "&c%{_r}%"
-							message "&7&l&m----------------------"
+
+							remove "%{_P}%" from {whitelist::players::*}
+							message "{@prefix} Removed &b%{_p}% &7from the whitelist"
 							stop
 					else:
 						message "{@prefix} Please provide a player to remove from the whitelisted players"
@@ -172,28 +168,6 @@ command /whitelist [<string>] [<text>] :
 			message "{@prefix} You don't have the required permission to do this!"
 			stop
 
-
-
-
-function whitelist_addPlayer(P: player) :: String:
-
-	if {whitelist::players::*} contains {_P}:
-		return "Player is already whitelisted"
-	
-	else:
-
-		add "%{_p}%" to {whitelist::players::*}
-		stop
-
-function whitelist_removePlayer(P: player) :: String:
-
-	if {whitelist::players::*} does not contain "%{_P}%":
-		return "Player is not whitelisted"
-	
-	else:
-
-		remove "%{_P}%" from {whitelist::players::*}
-		stop
 
 
 # Connection handeling
