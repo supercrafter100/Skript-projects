@@ -1,0 +1,224 @@
+# Custom whitelist made by Supercrafter100
+# I ain't gonna check but it would be nice if you could keep my name in here <3
+# If you have any suggestions for it, contact me on discord: Supercrafter100#6600
+# Have fun
+
+options:
+
+	prefix: &3&lWhitelist &8&l»&7
+
+on load:
+
+	delete {-whitelist::commands::*}
+
+	add "On" to {-whitelist::commands::*}
+	add "Off" to {-whitelist::commands::*}
+	add "List" to {-whitelist::commands::*}
+	add "Add [player]" to {-whitelist::commands::*}
+	add "Remove [player]" to {-whitelist::commands::*}
+	add "SetReason [text]" to {-whitelist::commands::*}
+	add "Notifications [on / off]" to {-whitelist::commands::*}
+
+	if {whitelist::status} is not set:
+		set {whitelist::status} to false
+	
+	if {whitelist::reason} is not set:
+		set {whitelist::reason} to "&fThe server is currently whitelisted"
+
+
+command /whitelist [<string>] [<text>] :
+	trigger:
+		if executor has permission "whitelist.admin":
+			
+			if arg 1 is set:
+
+				if arg 1 = "on" or "enable":
+					if {whitelist::status} = true:
+						message "{@prefix} The whitelist is already turned on"
+						stop
+					
+					else:
+						set {whitelist::status} to true
+						message "{@prefix} Successfully enabled the whitelist"
+						stop
+				
+				else if arg 1 = "off" or "disable":
+					if {whitelist::status} = false:
+						message "{@prefix} The whitelist is already turned off"
+						stop
+					
+					else:
+						set {whitelist::status} to false
+						message "{@prefix} Successfully disabled the whitelist"
+						stop
+				
+				else if arg 1 = "list" or "listplayers":
+
+					if size of {whitelist::players::*} > 0:
+						send "&7&l&m-------&3&lWHITELIST&7&l&m-------"
+						loop (size of {whitelist::players::*}) times:
+							message "{@prefix}  &7┣ &b%{whitelist::players::%loop-number%}%"
+						
+						stop
+					
+					else:
+						message "{@prefix} There aren't any players whitelisted"
+						stop
+				
+
+				else if arg 1 = "add" or "addplayer":
+					if arg-2 is set:
+						
+						set {_p} to arg-2 parsed as an offline player
+
+						set {_r} to whitelist_addPlayer({_P})
+
+						if {_r} is not set:
+							message "{@prefix} Successfully added &b%{_p}% &7to the whitelist"
+						
+						else:
+							message "&7&l&m----------------------"
+							message "&c&lERROR"
+							message "&c%{_r}%"
+							message "&7&l&m----------------------"
+							stop
+					else:
+						message "{@prefix} Please provide a player to add to the whitelisted players"
+						stop
+				
+				else if arg 1 = "remove" or "removeplayer":
+					if arg-2 is set:
+						
+						set {_p} to arg-2 parsed as an offline player
+
+						set {_r} to whitelist_removePlayer({_P})
+
+						if {_r} is not set:
+							message "{@prefix} Successfully removed &b%{_p}% &7from the whitelist"
+						
+						else:
+							message "&7&l&m----------------------"
+							message "&c&lERROR"
+							message "&c%{_r}%"
+							message "&7&l&m----------------------"
+							stop
+					else:
+						message "{@prefix} Please provide a player to remove from the whitelisted players"
+						stop
+				
+				else if arg 1 = "reason" or "setreason":
+					if arg 2 is set:
+						
+						set {whitelist::reason} to arg 2
+						message "{@prefix} Successfully set the whitelist reason to: &b%colored arg-2%"
+						stop
+
+					else:
+						message "{@prefix} Please provide a reason for the whitelist"
+						stop
+				
+				else if arg 1 = "notifications" or "notify":
+					if arg 2 is set:
+
+						if arg 2 = "on":
+							if {whitelist::notifications::%player's uuid%} is true:
+								message "{@prefix} Your notifications are already turned on"
+								stop
+							
+							else:
+								set {whitelist::notifications::%player's uuid%} to true
+								message "{@prefix} Turned whitelist notifications on"
+								stop
+						
+						if arg 2 = "off":
+							if {whitelist::notifications::%player's uuid%} is false:
+								message "{@prefix} Your notifications are already turned off"
+								stop
+							
+							else:
+								set {whitelist::notifications::%player's uuid%} to false
+								message "{@prefix} Turned whitelist notifications off"
+								stop
+					else:
+						message "{@prefix} Please provide an argument (on / off)"
+						stop
+
+				else:
+					message "{@prefix} Command not recognized"
+					stop
+
+
+			else:
+				send "&7&l&m-------&3&lWHITELIST&7&l&m-------"
+				set {_s} to size of {-whitelist::commands::*}-1
+				set {_i} to 1
+				set {_color} to "e"
+				loop {_s} times:
+					if {_color} = "e":
+						set {_color} to "6"
+					else:
+						set {_color} to "e"
+					message "{@prefix}  &7┣ &%{_color}%%{-whitelist::commands::%{_i}%}%"
+					add 1 to {_i}
+
+				if {_color} = "e":
+					set {_color} to "6"
+				else:
+					set {_color} to "e"
+				message "{@prefix}  &7┗ &%{_color}%%{-whitelist::commands::%{_i}%}%"
+				stop
+
+		else:
+			message "{@prefix} You don't have the required permission to do this!"
+			stop
+
+
+
+
+function whitelist_addPlayer(P: player) :: String:
+
+	if {whitelist::players::*} contains {_P}:
+		return "Player is already whitelisted"
+	
+	else:
+
+		add "%{_p}%" to {whitelist::players::*}
+		stop
+
+function whitelist_removePlayer(P: player) :: String:
+
+	if {whitelist::players::*} does not contain "%{_P}%":
+		return "Player is not whitelisted"
+	
+	else:
+
+		remove "%{_P}%" from {whitelist::players::*}
+		stop
+
+
+# Connection handeling
+
+on connect:
+
+	if {whitelist::notifications::%player's uuid%} is not set:
+		set {whitelist::notifications::%player's uuid%} to true
+
+	{whitelist::status} = true
+	if player has permission "whitelist.bypass":
+		stop
+	
+	else:
+		if {whitelist::players::*} contains "%player%":
+			stop
+		
+		else:
+			kick player due to "%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%%nl%&eYou have been kicked from the server%nl%&eServer is whitelisted%nl%%nl%&r%{whitelist::reason}%"
+
+			loop all players:
+				if loop-player has permission "whitelist.notify":
+					if {whitelist::notifications::%loop-player's uuid%} = true:
+						send "&7&l&m-------&3&lWHITELIST&7&l&m-------" to loop-player
+						send "&b%player% &7tried to connect to the server" to loop-player
+						send "&7But got kicked with the reason: &b%{whitelist::reason}%" to loop-player
+						send "&7&l&m----------------------" to loop-player
+	
