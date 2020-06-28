@@ -1,0 +1,44 @@
+# Options (only 1 ig)
+options:
+
+	prefix: &3&lPlaytime &8&l»&7
+# On join stuff
+
+on join:
+
+	set {joined::%player's uuid%} to now
+
+on quit:
+
+	set {_diff} to difference between {joined::%player's uuid%} and now
+
+	add {_diff} to {playtime::%player's uuid%}
+
+
+# Command
+
+command /playtime [<offline player>]:
+	trigger:
+		if arg 1 is set:
+
+			if {playtime::%arg-1's uuid%} is not set:
+				set {playtime::%arg-1' uuid%} to 0 minutes
+
+			loop all players:
+				if "%loop-player%" = "%arg-1%":
+					set {_online} to true
+
+			if {_online} is true:
+				set {_diff} to difference between {joined::%arg-1's uuid%} and now
+				add {_diff} to {playtime::%arg-1's uuid%}
+				set {joined::%arg-1's uuid%} to now
+			
+			message "{@prefix} %arg-1% their playtime is: &b%{playtime::%arg-1's uuid%}%"
+
+		else:
+			set {_diff} to difference between {joined::%player's uuid%} and now
+			add {_diff} to {playtime::%player's uuid%}
+			set {joined::%player's uuid%} to now
+			
+			message "{@prefix} Your playtime is: &b%{playtime::%player's uuid%}%"
+		
