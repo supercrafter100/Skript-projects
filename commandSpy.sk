@@ -1,0 +1,121 @@
+options:
+	prefix: &3&lCmdSpy &8&l»&7
+
+on load:
+	if {commandspy::bypassed::*} is not set:
+
+		add "" to {commandspy::bypassed::*}
+	
+	delete {-commandspy::commands::*}
+
+	add "addcommand" to {-commandspy::commands::*}
+	add "removecommand" to {-commandspy::commands::*}
+	add "listcommands" to {-commandspy::commands::*}
+
+	add 
+command /commandspy [<string>] [<text>]:
+	aliases: /cspy, /cmdspy
+	trigger:
+		if executor has permission "commandspy":
+			if arg 1 is set:
+
+				if arg 1 = "addcommand" or "addcmd":
+
+					if arg 2 is set:
+
+						if first character of arg-2 = "/":
+							set {_fulltxt} to arg-2
+							set {_cmd} to last (length of {_fulltxt} - 1) characters of arg-2
+						
+						else:
+							set {_cmd} to arg-2
+						
+						if {commandspy::bypassed::*} does not contain {_cmd}:
+							add {_cmd} to {commandspy::bypassed::*}
+							message "{@prefix} added the command &b/%{_cmd}% &7to the bypass list"
+							stop
+						
+						else:
+							message "{@prefix} This command is already bypassed"
+							stop
+					else:
+						message "{@prefix} Give a command to add to the bypass list (without the /)"
+						stop
+				
+				else if arg 1 = "removecommand" or "removecmd":
+
+					if arg 2 is set:
+
+						if first character of arg-2 = "/":
+							set {_fulltxt} to arg-2
+							set {_cmd} to last (length of {_fulltxt} - 1) characters of arg-2
+						
+						else:
+							set {_cmd} to arg-2
+						
+						if {commandspy::bypassed::*} contains {_cmd}:
+							remove {_cmd} from {commandspy::bypassed::*}
+							message "{@prefix} removed the command &b/%{_cmd}% &7from the bypass list"
+							stop
+						
+						else:
+							message "{@prefix} This command is currently not bypassed"
+							stop
+					else:
+						message "{@prefix} Give a command to add to the bypass list (without the /)"
+						stop
+				
+				else if arg-1 = "listcommands":
+					if size of {commandspy::bypassed::*} > 1:
+						send "&7&l&m-------&3&lCommandSpy&7&l&m-------"
+						loop (size of {commandspy::bypassed::*}) times:
+							{commandspy::bypassed::%loop-number%} != ""
+							message "{@prefix}  &7┣ &b%{commandspy::bypassed::%loop-number%}%"
+						
+						stop
+					
+					else:
+						message "{@prefix} There aren't any commands bypassed!"
+						stop
+				
+				else:
+					send "&7&l&m-------&3&lCommandSpy&7&l&m-------"
+					set {_s} to size of {-commandSpy::commands::*}-1
+					set {_i} to 1
+					set {_color} to "e"
+					loop {_s} times:
+						if {_color} = "e":
+							set {_color} to "6"
+						else:
+							set {_color} to "e"
+						message "{@prefix}  &7┣ &%{_color}%%{-CommandSpy::commands::%{_i}%}%"
+						add 1 to {_i}
+
+					if {_color} = "e":
+						set {_color} to "6"
+					else:
+						set {_color} to "e"
+					message "{@prefix}  &7┗ &%{_color}%%{-CommandSpy::commands::%{_i}%}%"
+					stop
+			else:
+				if {commandSpy::status::%player's uuid%} is not set:
+
+					set {commandspy::status::%player's uuid%} to true
+					message "{@prefix} Enabled your commandspy"
+					stop
+				
+				else:
+
+					delete {commandspy::status::%player's uuid%}
+					message "{@prefix} Disabled your commandspy"
+					stop
+		else:
+			message "{@prefix} You do not have the required permission to do this!"
+			stop
+
+on command:
+	sender is a player
+
+	if {commandspy::bypassed::*} doesn't contain full command:
+
+		send "{@prefix} &e%player% &8&l» &a/%full command%" to all players where [{commandspy::status::%uuid of input%} is true]
