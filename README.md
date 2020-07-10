@@ -1,2 +1,2 @@
 # Skript-projects
-Here you can find all my script projects that I made open source for everyone to use
+Here you can find all my script projects that I made open source for everyone to use. Please do not claim any of these scripts as your own. If I didnt put credit in the files doesnt mean that you can copy it and just claim that you made it. Please keep in mind that these scripts are for people who cant use skript at all. There are probably way better ways of doing some things but I just want to help people out
