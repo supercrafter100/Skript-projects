@@ -1,0 +1,74 @@
+# This is an api to get the votes, max playercount, plan, total boosters, and current boosters
+# For your playerserver
+
+# Change the url to your playerserver its api url. You can find it 
+# At your web manager --> more --> misc
+
+# Dependencies:
+
+# Skript-json
+# Skript
+
+# Tested version: 1.12
+
+# Made by Supercrafter100
+
+# Here are the functions to get the info:
+
+# - API_getVotes()		 	| returns the total votes of your server
+# - API_getMaxPlayers()  	| returns the maximum players of your server
+# - API_getPlan() 		 	| returns the server plan
+# - API_getBoosterCount()	| returns the current amount of boosters
+
+options:
+	apiURL: http://api.playerservers.com/api/?key=U05n9AeQrbBJVgwjdXuvYWqIaTiPmoC244905
+
+function API_getVotes() :: integer:
+	set {_txt} to text from "{@apiURL}"
+
+	map json {_txt} to {_json::*}
+	set {_votes} to {_json::votes} parsed as an integer
+
+	return {_votes}
+
+function API_getMaxPlayers() :: integer:
+
+	set {_plan} to API_getPlan()
+	if {_plan} = "Free":
+		set {_basePlayers} to 15
+	if {_plan} = "Noble":
+		set {_basePlayers} to 15
+	if {_plan} = "royal":
+		set {_basePlayers} to 15
+	if {_plan} = "God":
+		set {_basePlayers} to 15
+	if {_plan} = "vip":
+		set {_basePlayers} to 30
+	if {_plan} = "MVP":
+		set {_basePlayers} to 50
+	
+	set {_boosterCount} to API_getBoosterCount()
+	set {_addedPlayers} to {_boosterCount} * 5
+	
+	set {_totalCount} to (({_basePlayers}) + ({_addedPlayers}))
+
+	return "%{_totalCount}%" parsed as an integer
+
+function API_getPlan() :: string:
+	set {_txt} to text from "{@apiURL}"
+
+	map json {_txt} to {_json::*}
+	set {_plan} to {_json::plan} 
+	
+	set {_split::*} to {_plan} split at " "
+	set {_plan} to {_split::1}
+
+	return {_plan}
+function API_getBoosterCount() :: integer:
+	set {_txt} to text from "{@apiURL}"
+
+	map json {_txt} to {_json::*}
+	set {_boosterCount} to {_json::boosters}
+	
+	set {_boosterCount} to {_boosterCount} parsed as an integer
+	return {_boosterCount}
