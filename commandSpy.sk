@@ -11,8 +11,6 @@ on load:
 	add "addcommand" to {-commandspy::commands::*}
 	add "removecommand" to {-commandspy::commands::*}
 	add "listcommands" to {-commandspy::commands::*}
-
-	add 
 command /commandspy [<string>] [<text>]:
 	aliases: /cspy, /cmdspy
 	trigger:
