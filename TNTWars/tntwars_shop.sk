@@ -1,0 +1,35 @@
+on rightclick with chest:
+	name of event-item = "&eItem selector"
+	lore of event-item = "&7Right click to open the item selector"
+
+	cancel event
+	tntwars_shop_openItems(player)
+
+on drop:
+	name of event-item = "&eItem selector"
+	lore of event-item = "&7Right click to open the item selector"
+
+	cancel event
+	
+function tntwars_shop_openItems(P: player):
+	open virtual chest with 4 rows named "&eItem selection" to {_P}
+
+	loop 9 times:
+		format gui slot (26 + loop-number) of {_P} with black stained glass pane named "&f"
+
+	format gui slot 30 of {_P} with lava bucket named "&cClear inventory" to run:
+		clear {_P}'s inventory
+		wait 1 tick
+
+		set {_col} to "%tntwars_team_getTeam({_P})%" parsed as a color
+		tntwars_global_putArmour({_P}, {_col})
+		
+		set slot 8 of player's inventory to chest named "&eItem selector" with lore "&7Right click to open the item selector"
+
+	format gui slot 32 of {_P} with shiny nether star named "&6&lPlatforms Builder" with lore "&7Right click to build platforms!" to run function tntwars_shop_openPlatform({_P})
+
+	loop (size of {-tntwars::config:shopItems::*}) times:
+		set {_i} to {-tntwars::config:shopItems::%loop-number%}
+		format gui slot (loop-number - 1) of {_P} with {_i} to run:
+			set {_amount} to max stack size of {_i}
+			give {_amount} of {_i} to {_P}

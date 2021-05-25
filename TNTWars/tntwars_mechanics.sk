@@ -1,0 +1,229 @@
+on dispense of tnt:
+	if tntwars_global_getStatus() != "playing":
+		cancel event
+
+on place of dispenser:
+
+	if tntwars_global_getMode() = "noscatter":
+		set {_dir} to "%facing of event-block%"
+		if {_dir} = "above":
+			cancel event
+			message "&cThe current mode does not allow placing of upwards dispensers!"
+			stop
+
+	set nbt of event-block to {tntwars::random::dispenserNBT}
+	set metadata tag "dispenserOwner" of event-block to "%player%"
+
+
+on place:
+	set metadata tag "blockOwner" of event-block to "%player%"
+
+on dispense of tnt: 
+	if tntwars_global_getStatus() != "playing":
+		cancel event
+		stop
+	
+	set {_owner} to metadata tag "dispenserOwner" of event-block
+	if {_owner} is set:
+		cancel event
+
+		set {_a} to amount of tnt in inventory of event-block
+		if {_a} <= 64:
+			stop
+
+		remove 1 tnt from inventory of event-block
+		set {_x} to x-coordinate of event-location
+		set {_y} to y-coordinate of event-block
+		set {_z} to z-coordinate of event-block
+
+		set {_dir} to "%facing of event-block%"
+		
+		if {_dir} = "below":
+			set {_y} to {_y} - 1
+		if {_dir} = "above":
+			set {_y} to {_y} + 1
+		if {_dir} = "north":
+			set {_z} to {_z} - 1
+		if {_dir} = "south":
+			set {_z} to {_z} + 1
+		if {_dir} = "west":
+			set {_x} to {_x} - 1
+		if {_dir} = "east":
+			set {_x} to {_x} + 1
+		
+		set {_loc} to location({_x}, {_y} - 0.5, {_z}, world of event-block)
+		spawn a tnt at {_loc}
+		
+		set {_e} to last spawned tnt
+		# teleport {_e} 1 meters infront of location of event-block
+
+		set metadata tag "tntOwner" of {_e} to "%{_owner}%"
+
+
+on damage:
+	if tntwars_team_getTeam(victim) is not set:
+		cancel event
+		stop
+	
+	if tntwars_global_getStatus() = "playing":
+		if {-tntwars::player::%victim's uuid%::spawnprotection} = true:
+			stop
+
+		if attacker is a player:
+			if tntwars_team_getTeam(victim) = tntwars_team_getTeam(attacker):
+				cancel event
+				stop
+			
+			if tntwars_team_getTeam(attacker) is not set:
+				cancel event
+				stop
+		
+		if "%damage cause%" = "entity explosion":
+			set {_owner} to metadata value "tntOwner" of attacker
+			if "%{_owner}%" != "%victim%":
+
+				set {_ownTeam} to tntwars_team_getTeam(victim)
+				set {_otherTeam} to tntwars_team_getTeam({_owner} parsed as a player)
+
+				if "%{_otherTeam}%" = "%{_ownTeam}%":
+					cancel event
+					stop
+
+		if final damage > victim's health:
+			cancel event
+			if "%damage cause%" = "entity explosion":
+				set {_owner} to metadata value "tntOwner" of attacker
+				if {_owner} is set:
+					if {_owner} = "%victim%":
+						tntwars_global_playerDeath(victim, "self")
+					else:
+						tntwars_global_playerDeath(victim, {_owner})
+				else:
+					tntwars_global_playerDeath(victim, "unkown")
+
+			else:
+				tntwars_global_playerDeath(victim, "unkown")
+
+on region exit:
+	if {-tntwars::playerdata::%player's uuid%::editmode} = true:
+		stop
+	
+	set {_t} to tntwars_team_getTeam(player)
+	if {_t} is not set:
+		stop
+	if "%event-region%" contains "redteam_playarea":
+		if {_t} = "blue":
+			stop
+
+		cancel event
+		message "&cYou can't exit the map!"
+
+	else if "%event-region%" contains "blueteam_playarea":
+		if {_t} = "red":
+			stop
+
+		cancel event
+		message "&cYou can't exit the map!"
+
+on explode:
+	if {-tntwars::global::nodestruction} = true:
+		cancel event
+		stop
+
+	if tntwars_global_getStatus() != "playing":
+		cancel event
+		stop
+	
+	if metadata tag "tntOwner" of event-entity is set:
+		set {_owner} to metadata tag "tntOwner" of event-entity parsed as a player
+		set {_team} to tntwars_team_getTeam({_owner})
+	
+	loop exploded blocks:
+		if "%region at loop-block%" contains "spawn":
+			cancel event
+
+		else if (check ["%region at loop-block%" contains "redteam_playarea"] and check [{_team} = "red"]) = true:
+			cancel event
+			if {-tntwars::config::explodableBlocks::*} contains loop-block:
+				if loop-block = dispenser:
+					if metadata tag "dispenserOwner" of loop-block = {_owner}:
+						set loop-block to air
+				else:
+					set loop-block to air
+		
+		else if (check ["%region at loop-block%" contains "blueteam_playarea"] and check [{_team} = "blue"]) = true:
+			cancel event
+			if {-tntwars::config::explodableBlocks::*} contains loop-block:
+				if loop-block = dispenser:
+					if metadata tag "dispenserOwner" of loop-block = {_owner}:
+						set loop-block to air
+				else:
+					set loop-block to air
+		
+		else:
+			if (check ["%region at loop-block%" doesn't contain "redteam_spawn"] and check ["%region at loop-block%" doesn't contain "blueteam_spawn"]) = true:	
+				if loop-block = dispenser:
+					if metadata tag "dispenserOwner" of loop-block != {_owner}:
+						cancel event
+					
+					else:
+						set nbt of loop-block to {tntwars::random::emptyDispenser}
+				set loop-block to air
+			else:
+				cancel event
+
+on place:
+	if {-tntwars::playerdata::%player's uuid%::editmode} = true:
+		stop
+	if "%region at event-block%" contains "redteam_spawn":
+		cancel event
+	if "%region at event-block%" contains "blueteam_spawn":
+		cancel event
+	if (check ["%region at event-block%" doesn't contain "blueteam_playarea"] and check [tntwars_team_getTeam(player) = "blue"]) = true:
+		cancel event
+		message "&cYou can't exit the map!"
+	if (check ["%region at event-block%" doesn't contain "redteam_playarea"] and check [tntwars_team_getTeam(player) = "red"]) = true:
+		cancel event
+		message "&cYou can't exit the map!"
+
+
+on break of dispenser:
+	set nbt of event-block to {tntwars::random::emptyDispenser}
+
+
+on break:
+	cancel drops
+	if {-tntwars::playerdata::%player's uuid%::editmode} = true:
+		stop
+	if "%region at event-block%" contains "redteam_spawn":
+		cancel event
+	if "%region at event-block%" contains "blueteam_spawn":
+		cancel event
+
+on hunger meter change:
+	cancel event	
+	set player's food level to 10
+
+on damage:
+	if {-tntwars::player::%victim's uuid%::spawnprotection} = true:
+		cancel event
+
+on pickup:
+	if event-item = tnt:
+		remove all tnt from player's inventory
+
+
+on drop:
+	wait 1 tick
+	# kill event-entity
+
+on flow:
+	if {-tntwars::config::explodableBlocks::*} contains block at future event-block:
+		set future event-block to air
+
+every 5 ticks:
+	if tntwars_global_getStatus() = "playing":
+		clear dropped items in all worlds
+
+on place of tnt:
+	cancel event

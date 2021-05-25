@@ -1,0 +1,149 @@
+on join:
+	SB_create(player, "&6&lTNTWars")
+
+	SB_addLine(player, "spacer-1", "&f&l&d&l  ", 7)
+	SB_addLine(player, "text-1", "&eTime left: &f$value", 6)
+	SB_addLine(player, "spacer-2", "&d&l&f&l   ", 5)
+	SB_addLine(player, "text-2", "&e&lLives:", 4)
+	SB_addLine(player, "text-3", "&f &c&lRed: &f$value", 3)
+	SB_addLine(player, "text-4", "&f &9&lBlue: &f$value", 2)
+	SB_addLine(player, "spacer-4", "&d&l&8&l   ", 1)
+
+every second:
+	set {_time} to tntwars_global_getTimeLeft()
+	set {_blue} to tntwars_global_getLives("blue")
+	set {_red} to tntwars_global_getLives("red")
+
+	loop all players:
+		SB_updateLine(loop-player, "text-1", tntwars_general_prettyTime({_time}))
+		SB_updateLine(loop-player, "text-3", "%{_red}%")
+		SB_updateLine(loop-player, "text-4", "%{_blue}%")
+#
+#	Creating board
+#
+function SB_create(p: player, title: string):
+
+
+	set {_u} to {_p}'s uuid
+	set {_board} to "board-%{_u}%"
+
+	#	Checking if the board exists
+	if style board {_board} exists:
+		stop
+
+	#	Applying board
+	create style board {_board}
+	set title of style board {_board} to {_title}
+	set style board of {_p} to {_board}
+
+	set {-board::%{_u}%} to {_board}
+
+
+#
+#	Deleting board
+#
+function SB_addLine(p: player, id: string, text: string, num: number = 0, value: string = "null", var: string = "$value"):
+	set {_u} to {_p}'s uuid
+	set {_board} to "board-%{_u}%"
+	set {_slot} to "board-%{_u}%-%{_id}%"
+
+	#	checks
+	if text id {_slot} is set:
+		SB_deleteLine({_p}, {_id})
+
+	if style board {_board} does not exist:
+		broadcast "board is not set &7%{_board}%"
+		stop
+
+	#	Setting data
+	set {-board::%{_u}%::%{_id}%} to {_slot}
+	set {-board::%{_u}%::%{_id}%::var} to {_var}
+	set {-board::%{_u}%::%{_id}%::text} to {_text}
+	set {-board::%{_u}%::%{_id}%::slot} to {_slot}
+	
+	#	Creating slot
+	replace all {_var} in {_text} with {_value}
+	create id {_slot} {_text} slot {_num} for style board {_board}
+
+
+
+#
+#	Update a line
+#
+function SB_updateLine(p: player, id: string, value: string = "null"):
+	set {_u} to {_p}'s uuid
+	set {_board} to "board-%{_u}%"
+	set {_slot} to "board-%{_u}%-%{_id}%"
+
+	#	Checks
+	if text id {_slot} is not set:
+		stop
+
+	if style board {_board} does not exist:
+		stop
+
+	#	Applying data
+	set {_r} to {-board::%{_u}%::%{_id}%::text}
+	replace all {-board::%{_u}%::%{_id}%::var} in {_r} with {_value}
+	set text id {_slot} to {_r} 
+	
+
+
+#
+#	Deleting a line
+#
+function SB_deleteLine(p: offline player, id: string):
+	set {_u} to {_p}'s uuid
+	set {_board} to "board-%{_u}%"
+	set {_slot} to "board-%{_u}%-%{_id}%"
+
+	#	Checks
+	if text id {_slot} is not set:
+		stop
+
+	if style board {_board} does not exist:
+		stop
+
+	delete id {_slot} in style board {_board}
+	delete {-board::%{_u}%::%{_id}%}
+	delete {-board::%{_u}%::%{_id}%::*}
+
+
+
+#
+#	Deleting the board
+#
+function SB_delete(p: offline player):
+	set {_u} to {_p}'s uuid
+	set {_board} to "board-%{_u}%"
+
+	#	Checks
+	if style board {_board} does not exist:
+		stop
+
+	loop {-board::%{_u}%::*}:
+		SB_deleteLine({_p}, loop-index)
+
+	delete style board {_board}
+	delete {-board::%{_u}%::*}
+
+
+
+on disable:
+	loop {-board::*}:
+		SB_delete(((loop-index) parsed as a offline player))
+
+on quit:
+	SB_delete(player)
+
+on load:
+	loop all players:
+		SB_create(loop-player, "&6&lTNTWars")
+
+		SB_addLine(loop-player, "spacer-1", "&f&l&d&l  ", 7)
+		SB_addLine(loop-player, "text-1", "&eTime left: &f$value", 6)
+		SB_addLine(loop-player, "spacer-2", "&d&l&f&l   ", 5)
+		SB_addLine(loop-player, "text-2", "&e&lLives:", 4)
+		SB_addLine(loop-player, "text-3", "&f &c&lRed: &f$value", 3)
+		SB_addLine(loop-player, "text-4", "&f &9&lBlue: &f$value", 2)
+		SB_addLine(loop-player, "spacer-4", "&d&l&8&l   ", 1)

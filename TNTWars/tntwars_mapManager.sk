@@ -1,0 +1,454 @@
+options:
+	prefix: %{-tntwars::config::prefix}%
+	PW: 1&YKhyFT67R37*^Wt786rt&$Q92Bityby&Q(*bt&yq(t))
+
+	debug: false
+
+command /map [<string>] [<string>] [<string>] [<string>]:
+	trigger:
+		if checkPermission(player) is true:
+			if arg 1 = "PW={@PW}":
+
+				if tntwars_map_getPrefix(arg 2 parsed as a integer) is not set:
+					message "{@prefix} Invalid ID"
+					stop
+
+				set {_id} to arg 2 parsed as a integer
+
+				if arg 3 = "setPrefix":
+					message "{@prefix} &f&lCurrent: &7%tntwars_map_getPrefix({_id})%"
+					message "{@prefix} &7Type the new Prefix in chat"
+					message "{@prefix} &7Type exit to stop"
+					message ""
+					set {-tntwars::players::%player's uuid%::setNewPrefix} to {_id}
+					stop
+				
+				if arg 3 = "setAuthor":
+					message "{@prefix} &f&lCurrent: &7%tntwars_map_getAuthor({_id})%"
+					message "{@prefix} &7Type the new author in chat"
+					message "{@prefix} &7Type exit to stop"
+					message ""
+					set {-tntwars::players::%player's uuid%::setNewAuthor} to {_id}
+					stop
+				
+				if arg 3 = "setitem":
+					set {_i} to player's tool's type
+					set {_r} to tntwars_map_setItem({_id}, {_i})
+					if {_r} is not set:
+						set {_M} to "Changed item"
+					else:
+						message "&c&lERROR &cwhile changing item: &6%{_r}%"
+						stop
+				if arg 3 = "setworld":
+					set {_w} to "%player's world%"
+					set {_r} to tntwars_map_setWorld({_id}, {_w})
+					if {_r} is not set:
+						set {_M} to "Changed world"
+					else:
+						message "&c&lERROR &cwhile changing world: &6%{_r}%"
+						stop 
+				
+				if arg 3 = "setspawn":
+					set {_loc} to player's location
+					set {_r} to tntwars_map_setSpawn({_id}, {_loc}, arg-4)
+					if {_r} is not set:
+						set {_M} to "changed spawn %arg 4%"
+					else:
+						message "&c&lERROR &cwhile changing spawn: &6%{_r}%"
+						stop
+
+				if arg 3 = "setlobby":
+					set {_loc} to player's location
+					set {_r} to tntwars_map_setLobby({_id}, {_loc})
+					if {_r} is not set:
+						set {_M} to "changed lobby location"
+					else:
+						message "&c&lERROR &cwhile changing spawn: &6%{_r}%"
+						stop
+
+				if arg 3 = "setstatus":
+					set {_r} to tntwars_map_setStatus({_id}, arg 4)
+					if {_r} is not set:
+						set {_M} to "changed status"
+					else:
+						message "&c&lERROR &cwhile changing status: &6%{_r}%"
+						stop
+
+				execute player command "map admin edit %arg 2%"
+				message "{@prefix} %{_M}%"
+				message "&f"
+				stop
+
+
+
+
+
+
+			if arg 1 = "admin":
+				if arg 2 = "reload":
+					if arg 3 is set:
+						set {-tntwars::staff::nextmap} to arg-3 parsed as an integer
+						broadcast "%arg-3%"
+					tntwars_global_startGame()
+					
+				if arg 2 = "create":
+					if arg 4 is set:
+						message "{@prefix} The map cannot contain spaces"
+						stop
+					set {_r} to tntwars_map_addMap(arg-3)
+					if {_r} is not set:
+						message "{@prefix} Successfully created map %arg 3%"
+						stop
+					else:
+						message "{@prefix} &8&m                                 "
+						message "{@prefix} &f&lSomething went wrong:"
+						message "{@prefix}   &c%{_r}%"
+						message "{@prefix} &8&m                                 "
+			
+				else if arg 2 = "list":
+					set {_r::*} to tntwars_map_getMaps()
+					if {_r::*} is not set:
+						message "{@prefix} No maps exist!"
+						stop
+					
+					message "{@prefix} All maps:"
+					set {_c} to size of {_r::*}
+					loop {_r::*}:
+						set {_p} to tntwars_map_getPrefix(loop-value)
+						if {_r::%{_c}%} != loop-value:
+							message "{@prefix}  &7┣ &b%loop-value% &7[%{_P}%] <ttp:&7Click to reveal%nl%more of %{_P}%><cmd:/map admin edit %loop-value%>&3&l[CLICK]"
+						else:
+							message "{@prefix}  &7┗ &b%loop-value% &7[%{_P}%] <ttp:&7Click to reveal%nl%more of %{_P}%><cmd:/map admin edit %loop-value%>&3&l[CLICK]"
+						
+						delete {_p}
+				
+				else if arg 2 = "edit":
+					if tntwars_map_getPrefix(arg-3 parsed as an integer) is not set:
+						message "{@prefix} Invalid ID"
+						stop
+					
+					set {_id} to arg 3 parsed as an integer
+					set {_prefix} to tntwars_map_getPrefix({_id})
+					set {_redspawn} to tntwars_map_getSpawn({_id}, "red")
+					set {_bluespawn} to tntwars_map_getSpawn({_id}, "blue")
+					set {_item} to tntwars_map_getItem({_id})
+					set {_author} to tntwars_map_getAuthor({_id})
+					set {_lobby} to tntwars_map_getLobby({_id})
+					set {_status} to tntwars_map_getStatus({_id})
+					set {_world} to tntwars_map_getWorld({_id})
+
+					if {_redspawn} is set:
+						set {_redspawn} to "Set"
+					if {_bluespawn} is set:
+						set {_bluespawn} to "Set"
+					if {_lobby} is set:
+						set {_lobby} to "Set"
+					
+					message "{@prefix} &fID: &b%arg 3%"
+					message "{@prefix} &fPrefix: &b%{_prefix}%    <ttp:&7Click to change &3Prefix><cmd:/map PW={@PW} %{_id}% setPrefix>&3&l[Change]"
+					message "{@prefix} &fAuthor: &b%{_author}%    <ttp:&7Click to change &3Author><cmd:/map PW={@PW} %{_id}% setauthor>&3&l[Change]"
+					message "{@prefix} &fItem: &b%{_item}%    <ttp:&7Click to set &3Item><cmd:/map PW={@PW} %{_id}% setItem>&3&l[Set to held item]"
+					message "{@prefix} &fWorld: &b%{_world}%    <ttp:&7Click to set &3world><cmd:/map PW={@PW} %{_id}% setWorld>&3&l[Set to current world]"
+					message "{@prefix} &fRedSpawn: &b%{_redspawn}%    <ttp:&7Click to set &3spawn><cmd:/map PW={@PW} %{_id}% setSpawn red>&3&l[Set to current location]"
+					message "{@prefix} &fBlueSpawn: &b%{_bluespawn}%    <ttp:&7Click to set &3spawn><cmd:/map PW={@PW} %{_id}% setSpawn blue>&3&l[Set to current location]"
+					message "{@prefix} &fLobby: &b%{_lobby}%    <ttp:&7Click to set &3lobby><cmd:/map PW={@PW} %{_id}% setlobby>&3&l[Set to current location]"
+					message "{@prefix} &fStatus: &b%{_status}%    <ttp:&7click to set to &aOpen><cmd:/map PW={@PW} %{_id}% setstatus open>&a&l[OPEN]   <ttp:&7click to set to &cConstruction><cmd:/map PW={@PW} %{_id}% setstatus construction>&c&l[Construction]"
+					stop
+
+				else if arg 2 is not set:
+					set {_color} to "e"
+					loop tntwars_map_getCommands():	
+						message "{@prefix} &f┣ &%{_color}%%loop-value%"
+
+						if {_color} = "e":
+							set {_color} to "6"
+						else if {_color} = "6":
+							set {_color} to "e"
+		else:
+			message "{@prefix} You do not have the required permission to do this!"
+			stop
+
+
+#///////////////////////////////////////////
+# Map functions
+#///////////////////////////////////////////
+
+function tntwars_map_addMap(N: string) :: string:
+	set {_id} to a random integer between 1000 and 9999
+
+	if tntwars_map_getMaps() contains {_id}:
+		return "ID already exists (try again)"
+	
+	if {_n} is not set:
+		return "Invalid map name"
+	
+	add {_id} to {tntwars::global::maps::*}
+
+	set {tntwars::global::map::%{_id}%::prefix} to {_n}
+	set {tntwars::global::map::%{_id}%::world} to none
+	set {tntwars::global::map::%{_id}%::spawn::red} to none
+	set {tntwars::global::map::%{_id}%::spawn::blue} to none
+	set {tntwars::global::map::%{_id}%::item} to none
+	set {tntwars::global::map::%{_id}%::author} to none
+	set {tntwars::global::map::%{_id}%::lobby} to none
+	set {tntwars::global::map::%{_id}%::status} to "CONSTRUCTION"
+
+function tntwars_map_removeMap(id: integer) :: string:
+	if tntwars_map_getPrefix({_id}) is set:
+		
+		remove {_id} from {tntwars::global::maps::*}
+		delete {tntwars::global::map::*}
+
+		set {_i} to 0
+		set {_l} to size of {tntwars::global::maps::*}
+		loop {tntwars::global::maps::*}:
+			add 1 to {_i}
+			if loop-value is not set:
+				set {_i2} to {_l} - {_i}
+				loop {_i2} times:
+					set {_val2} to loop-value-2
+					if {tntwars::global::maps::%{_val2}%} is set:
+						set {tntwars::global::maps::%{_i}%} to {tntwars::global::maps::%{_val2}%}
+						delete {tntwars::global::maps::%{_val2}%}
+
+	else:
+		return "ID does not exist"
+
+
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+function tntwars_map_getMaps() :: objects:
+	return {tntwars::global::maps::*}
+
+function tntwars_map_setPrefix(id: integer, new: string) :: string:
+	if tntwars_map_getPrefix({_id}) is not set:
+		return "Invalid ID"
+	set {tntwars::global::map::%{_id}%::prefix} to {_new}
+
+function tntwars_map_getPrefix(id: integer) :: string:
+	return {tntwars::global::map::%{_id}%::prefix}
+
+function tntwars_map_setSpawn(id: integer, loc: location, team: string) :: string:
+	if tntwars_map_getPrefix({_id}) is not set:
+		return "Invalid ID"
+	set {tntwars::global::map::%{_id}%::spawn::%{_team}%} to {_loc}
+
+function tntwars_map_getSpawn(id: integer, team: string) :: location:
+	return {tntwars::global::map::%{_id}%::spawn::%{_team}%}
+
+function tntwars_map_setItem(id: integer, i: item) :: string:
+	if tntwars_map_getPrefix({_id}) is not set:
+		return "Invalid ID"
+	set {tntwars::global::map::%{_id}%::item} to {_i}
+
+function tntwars_map_getItem(id: integer) :: item:
+	return {tntwars::global::map::%{_id}%::item}
+
+function tntwars_map_setLobby(id: integer, loc: location) :: string:
+	if tntwars_map_getPrefix({_id}) is not set:
+		return "Invalid ID"
+	set {tntwars::global::map::%{_id}%::lobby} to {_loc}
+
+function tntwars_map_getLobby(id: integer) :: location:
+	return {tntwars::global::map::%{_id}%::lobby}
+
+function tntwars_map_setAuthor(id: integer, new: string) :: string:
+	if tntwars_map_getPrefix({_id}) is not set:
+		return "Invalid ID"
+	set {tntwars::global::map::%{_id}%::author} to {_new}
+
+function tntwars_map_getAuthor(id: integer) :: string:
+	return {tntwars::global::map::%{_id}%::author}
+
+function tntwars_map_setStatus(id: integer, status: string) :: string:
+	if tntwars_map_getPrefix({_id}) is not set:
+		return "Invalid ID"
+	set {tntwars::global::map::%{_id}%::status} to {_status}
+function tntwars_map_getStatus(id: integer) :: string:
+	return {tntwars::global::map::%{_id}%::status}
+
+function tntwars_map_setWorld(id: integer, w: string) :: string:
+	if tntwars_map_getPrefix({_id}) is not set:
+		return "Invalid ID"
+	set {tntwars::global::map::%{_id}%::world} to {_w}
+
+function tntwars_map_getWorld(id: integer) :: string:
+	return {tntwars::global::map::%{_id}%::world}
+
+	
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+
+on chat:
+	if {-tntwars::players::%player's uuid%::setNewPrefix} is set:
+		if message = "exit":
+			cancel event
+			message "{@prefix} Cancelled prefix change"
+			delete {-tntwars::players::%player's uuid%::setNewPrefix}
+			stop
+
+		cancel event
+
+		set {_id} to {-tntwars::players::%player's uuid%::setNewPrefix}
+		delete {-tntwars::players::%player's uuid%::setNewPrefix}
+
+		set {_r} to tntwars_map_setPrefix({_id}, message)
+		if {_r} is not set:
+			message "{@prefix} Changed prefix"
+			execute player command "map admin edit %{_id}%"
+			stop
+		else:
+			message "&c&lERROR &cwhile changing prefix: &6%{_r}%"
+			execute player command "map admin edit %{_id}%"
+			stop
+	
+	else if {-tntwars::players::%player's uuid%::setNewAuthor} is set:
+		if message = "exit":
+			cancel event
+			message "{@prefix} Cancelled author change"
+			delete {-tntwars::players::%player's uuid%::setNewAuthor}
+			stop
+
+		cancel event
+
+		set {_id} to {-tntwars::players::%player's uuid%::setNewAuthor}
+		delete {-tntwars::players::%player's uuid%::setNewAuthor}
+
+		set {_r} to tntwars_map_setAuthor({_id}, message)
+		if {_r} is not set:
+			message "{@prefix} Changed author"
+			execute player command "map admin edit %{_id}%"
+			stop
+		else:
+			message "&c&lERROR &cwhile changing author: &6%{_r}%"
+			execute player command "map admin edit %{_id}%"
+			stop
+
+
+#
+#	Map resetting stuff
+#
+
+function tntwars_global_reloadMap(new: integer) :: string:
+	set {_old} to tntwars_global_getPreviousMap()
+
+	set {_name} to tntwars_map_getWorld({_new})
+	if {_name} is not set:
+		return "Invalid world"
+	
+	# If the old map is set
+	if {_old} is set:
+		set {_oldName} to tntwars_map_getWorld({_old})
+
+		#
+		#	Load the old map copy
+		#
+		debug("Loading copy of %{_oldName}%")
+		execute console command "mv load %{_oldName}%_copy"
+		wait 1 tick
+		#
+		#	If old map exists, continue to load the backup
+		#	
+		if "%{_oldName}%_copy" exists:
+
+			#	
+			#	Delete the map they just played on, we have to use the original map since worldguard regions otherwise mess up
+			#
+
+			debug("Deleting %{_oldName}% world")
+			execute console command "mv delete %{_oldName}%"
+			execute console command "mv confirm"
+			wait 1 tick
+
+			#
+			#	Clone the backup map to the new one with the new name
+			#
+			debug("Cloning %{_oldName}%_copy")
+			execute console command "mv clone %{_oldName}%_copy %{_oldName}%"
+			wait 1 tick
+
+			#
+			#	Modify the alias and edit some gamerules
+			#
+			debug("Modifying gamerules")
+			execute console command "mv modify set alias %{_oldName}% %{_oldName}%"
+			execute console command "mv modify set difficulty normal %{_oldName}%"
+			execute console command "mv gamerule doDaylightCycle false %{_oldName}%"
+			execute console command "mv gamerule keepInventory true %{_oldName}%"
+
+			wait 3 ticks
+			#
+			#	Deleting the map backup as we don't need it anymore
+			#
+
+			debug("Deleting %{_oldName}%_copy")
+			execute console command "mv delete %{_oldName}%_copy"
+			execute console command "mv confirm"
+			wait 1 tick
+			#
+			#	Unload the new map
+			#
+		
+		debug("Unloading %{_oldName}%")
+		execute console command "mv unload %{_oldName}%"
+
+
+
+	#
+	#	Load the new map
+	#
+
+	debug("Loading %{_name}%")
+	execute console command "mv load %{_name}%"
+	wait 1 tick
+	
+	#
+	#	Making a backup copy of this map
+	#
+
+	debug("Cloning %{_name}% to %{_name}%_copy")
+	execute console command "mv clone %{_name}% %{_name}%_copy"
+	wait 1 tick
+
+	#
+	#	Edit copy alias and some gamerules
+	#
+
+	debug("Changing gamerules")
+	execute console command "mv modify set alias %{_name}%_copy %{_name}%_copy"
+	execute console command "mv modify set difficulty normal %{_name}%_copy"
+	execute console command "mv gamerule doDaylightCycle false %{_name}%_copy"
+	execute console command "mv gamerule keepInventory true %{_name}%"
+
+	#
+	#	Unloading the map copy
+	#
+	
+	debug("Unloading %{_name}%_copy")
+	execute console command "mv unload %{_name}%_copy"
+
+
+function tntwars_global_pickMap(previous: integer = 0) :: integer:
+
+	if {-tntwars::staff::nextmap} is set:
+		set {_a} to "%{-tntwars::staff::nextmap}%" parsed as an integer
+		delete {-tntwars::staff::nextmap}
+		return {_a}
+
+	set {_maps::*} to tntwars_map_getMaps()
+	if {_previous} is set:
+		remove {_previous} from {_maps::*}
+	
+	loop {_maps::*}:
+		if tntwars_map_getStatus(loop-value) = "Open":
+			add loop-value to {_tMaps::*}	
+
+	set {_map} to a random element out of {_tMaps::*}
+	return {_map}
+
+
+function debug(m: string):
+	{@debug} = true
+	broadcast "&c&l[DEBUG] &b%{_m}%"

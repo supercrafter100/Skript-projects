@@ -1,0 +1,455 @@
+options:
+	prefix: %{-tntwars::config::prefix}%
+
+
+function tntwars_global_startGame():
+
+	# Deleting stuff
+	delete {-tntwars::teams::red::*}
+	delete {-tntwars::teams::blue::*}
+
+	# Setting stuff
+	set {-tntwars::game::lives::red} to 15
+	set {-tntwars::game::lives::blue} to 15
+	set {-tntwars::game:timeLeft} to 30 minutes
+
+	if tntwars_global_getMode() = "grace":
+		set {-tntwars::game::gracePeriod} to 120 # seconds
+		set {-tntwars::global::nodestruction} to true
+
+	loop all players:
+		delete {-tntwars::player::%loop-player's uuid%::team}
+	
+	set {-tntwars::global::status} to "waiting"
+
+	# Map reloading
+	if {tntwars::global::lastMap} is set:
+		set {_new} to tntwars_global_pickMap({tntwars::global::lastmap})
+	else:
+		set {_new} to tntwars_global_pickMap()
+	
+	set {_t} to tntwars_global_reloadMap({_new})
+	if {_t} is set:
+		broadcast "&c&m-------------------------------------------"
+		broadcast "&4&lERROR"
+		broadcast "&f &6Something went wrong whilst reloading the map!"
+		broadcast "&f &e%{_t}%"
+		broadcast "&c&m-------------------------------------------"
+		stop
+
+	# Teleporting
+	set {tntwars::global::currentMap} to {_new}
+	set {tntwars::global::currentLobby} to tntwars_map_getLobby({_new})
+	set {tntwars::global::lastmap} to {_new}
+
+	wait 3 seconds
+	if "%{_new}%" exists:
+		loop all players:
+			tntwars_global_lobby(loop-player)
+
+	else:
+		broadcast "&c&m-------------------------------------------"
+		broadcast "&4&lERROR"
+		broadcast "&f &6Playing map does not exist"
+		broadcast "&c&m-------------------------------------------"
+		stop
+
+
+	# Countdown
+function tntwars_global_startCountdown():
+	set {-tntwars::global::status} to "countdown"
+	loop 30 times:
+		wait 1 second
+		loop all players:
+			set loop-player's level to (30 - loop-number)
+		
+		if loop-number = 1:
+			message "{@prefix} Game starting in 30 seconds" to all players
+		
+		if loop-number = 10:
+			message "{@prefix} Game starting in 20 seconds" to all players
+		
+		if loop-number = 20:
+			message "{@prefix} Game starting in 10 seconds" to all players
+		
+		if loop-number = 25:
+			message "{@prefix} Game starting in 5 seconds" to all players
+		if loop-number = 26:
+			message "{@prefix} Game starting in 4 seconds" to all players
+		if loop-number = 27:
+			message "{@prefix} Game starting in 3 seconds" to all players
+		if loop-number = 28:
+			message "{@prefix} Game starting in 2 seconds" to all players
+		if loop-number = 29:
+			message "{@prefix} Game starting in 1 second" to all players
+		
+		if tntwars_global_checkTeams() = false:
+			message "{@prefix} Countdown cancelled due to not enough players." to all players
+			set {-tntwars::global::status} to "waiting"
+			stop
+
+	set {-tntwars::global::status} to "playing"
+	loop all players:
+		if tntwars_team_getTeam(loop-player) is set:
+			tntwars_global_teleportPlayer(loop-player, true)
+
+	message "{@prefix} The game has started" to all players
+
+	set {_id} to tntwars_global_getCurrentMap()
+	set {_world} to tntwars_map_getWorld({_id})
+
+	execute console command "mv modify set difficulty normal %{_world}%"
+
+
+function tntwars_global_checkTeams() :: boolean:
+	set {_val} to 0
+
+	if size of {-tntwars::teams::red::*} > 1:
+		add 1 to {_val}
+	if size of {-tntwars::teams::blue::*} > 1:
+		add 1 to {_val}
+
+	if {_val} = 2:
+		return true
+	return false 
+
+
+function tntwars_global_getCurrentMap() :: integer:
+	return {tntwars::global::currentMap}
+function tntwars_global_getPreviousMap() :: integer:
+	return {tntwars::global::lastmap}
+function tntwars_global_getTimeLeft() :: timespan:
+	return {-tntwars::game:timeLeft}
+function tntwars_global_getLives(team: string) :: integer:
+	return {-tntwars::game::lives::%{_team}%}
+
+function tntwars_global_teleportPlayer(P: player, clear: boolean = false):
+	tntwars_global_hidePlayers()
+	set {_P}'s flight mode to false
+	
+	set {_u} to uuid of {_P}
+	set {_id} to tntwars_global_getCurrentMap()
+	set {_team} to tntwars_team_getTeam({_p})
+	set {_spawn} to tntwars_map_getSpawn({_id}, {_team})
+
+	teleport {_p} to tntwars_map_getSpawn({_id}, {_team})
+
+	if {_clear} = true:
+		clear {_p}'s inventory
+	set {_col} to "%{_team}%" parsed as a color
+
+	tntwars_global_putArmour({_P}, {_col})
+
+	set slot 7 of {_P}'s inventory to shiny nether star named "&6&lPlatforms Builder" with lore "&7Right click to build platforms!"
+	set slot 8 of {_P}'s inventory to chest named "&eItem selector" with lore "&7Right click to open the item selector"
+	
+	set {_prefix} to {_p}'s prefix
+
+	if {_team} = "red":
+		Set {_P}'s tab name to "%{_prefix}%&c%{_P}%"
+	else if {_team} = "blue":
+		Set {_P}'s tab name to "%{_prefix}%&9%{_P}%"
+	
+	set {-tntwars::player::%{_u}%::spawnprotection} to true
+	wait 10 seconds
+	delete {-tntwars::player::%{_u}%::spawnprotection}
+
+function tntwars_global_putArmour(P: player, col: color):
+	# armour
+	set {_helmet} to unbreakable leather helmet
+	set {_chestplate} to unbreakable leather chestplate
+	set {_leggings} to unbreakable leather leggings
+	set {_boots} to unbreakable leather boots
+
+
+	set {_p}'s helmet to {_helmet}
+	set {_p}'s chestplate to {_chestplate}
+	set {_p}'s leggings to {_leggings}
+	set {_p}'s boots to {_boots}
+
+	dye {_p}'s helmet {_col}
+	dye {_p}'s chestplate {_col}
+	dye {_p}'s leggings {_col}
+	dye {_p}'s boots {_col}
+
+#////////////////////////////////////////////
+function tntwars_team_openSelector(P: player):
+	open virtual hopper inventory named "&eTeam selector" to {_P}
+	wait 1 tick
+	make gui slot 0 of {_P} with red wool named "&cRed team" with lore "&7Click to select this team" to run:
+		close {_P}'s inventory
+		tntwars_team_selectTeam({_p}, "red")
+	make gui slot 2 of {_P} with sign item named "&eRandom team" with lore "&7Click to select a random team" to run:
+		close {_P}'s inventory
+		tntwars_team_selectTeam({_p}, "random")
+	make gui slot 4 of {_P} with blue wool named "&9Blue team" with lore "&7Click to select this team" to run:
+		close {_P}'s inventory
+		tntwars_team_selectTeam({_p}, "blue") 
+	
+	make gui slot 1 of {_P} with gray stained glass pane named "&f"
+	make gui slot 3 of {_P} with gray stained glass pane named "&f"
+
+	
+function tntwars_team_selectTeam(P: player, team: string):
+	set {_u} to uuid of {_p}
+
+	if {-tntwars::player::%{_u}%::team} is set:	
+		if tntwars_global_getStatus() = "playing":
+			tntwars_global_teleportPlayer({_p}, true)
+			stop
+
+		message "{@prefix} You already selected a team!" to {_p}
+		stop
+	
+	if {_team} = "blue":
+		if tntwars_team_checkBalanced("blue") = false:
+			message "{@prefix} You cannot unbalance teams" to {_p}
+			stop
+		
+		tntwars_team_addPlayer({_p}, "blue")
+	
+	if {_team} = "red":
+		if tntwars_team_checkBalanced("red") = false:
+			message "{@prefix} You cannot unbalance teams" to {_p}
+			stop
+		
+		tntwars_team_addPlayer({_p}, "red")
+	
+	if {_team} = "random":	
+		if tntwars_team_checkBalanced("red") = true:
+			set {_red} to true
+
+		if tntwars_team_checkBalanced("blue") = true:
+			set {_blue} to true
+		
+		if (check [{_blue} = true] and check [{_red} = true]) = true:
+			set {_team} to a random integer between 1 and 2
+			if {_team} = 1:
+				tntwars_team_addPlayer({_p}, "red")
+			if {_team} = 2:
+				tntwars_team_addPlayer({_p}, "blue")
+		
+		else:
+			if {_blue} = true:
+				tntwars_team_addPlayer({_p}, "blue")
+			if {_red} = true:
+				tntwars_team_addPlayer({_p}, "red")
+	
+	if tntwars_global_checkTeams() = true:
+		if tntwars_global_getStatus() = "waiting":
+			if {-tntwars::global::tournamentMode} is not set:
+				tntwars_global_startCountdown()
+		
+	if tntwars_global_getStatus() = "playing":
+		tntwars_global_teleportPlayer({_p}, true)
+
+
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+function tntwars_team_checkBalanced(team: string) :: boolean:
+	if {-tntwars::teams::blue::*} is not set:
+		set {-tntwars::teams::blue::*} to 0
+	if {-tntwars::teams::red::*} is not set:
+		set {-tntwars::teams::red::*} to 0
+	
+	set {_red} to size of {-tntwars::teams::red::*}
+	set {_blue} to size of {-tntwars::teams::blue::*}
+
+	if {_team} is "red":
+		if {_red} > {_blue}:
+			return false
+		return true
+	
+	if {_team} = "blue":
+		if {_blue} > {_red}:
+			return false
+		return true
+
+function tntwars_team_getTeamPlayers(team: string) :: objects:
+	return {-tntwars::teams::%{_team}%::*}
+
+function tntwars_team_addPlayer(P: player, team: string):
+	set {_u} to uuid of {_p}
+
+	add {_p} to {-tntwars::teams::%{_team}%::*}
+	set {-tntwars::player::%{_u}%::team} to {_team}
+
+	set {_prefix} to {_p}'s prefix
+
+	if {_team} = "red":
+		set {_c} to "c"
+		set {_P}'s tab name to "%{_prefix}%&c%{_P}%"
+	if {_team} = "blue":
+		set {_c} to "9"
+		set {_P}'s tab name to "%{_prefix}%&9%{_P}%"
+
+	
+	message "{@prefix} &eYou have been added to the &%{_c}%%{_team}% &eteam" to {_p}
+
+function tntwars_team_removePlayer(P: player):
+	set {_currentTeam} to tntwars_team_getTeam({_P})
+	set {_u} to uuid of {_P}
+
+	remove {_P} from {-tntwars::teams::%{_currentTeam}%::*}
+	delete {-tntwars::player::%{_u}%::team}
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+
+function tntwars_team_getTeam(P: player) :: string:
+	set {_u} to uuid of {_p}
+	return {-tntwars::player::%{_u}%::team}
+
+
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+
+function tntwars_global_lobby(P: player):
+	set {_c} to tntwars_global_getCurrentMap()
+
+	teleport {_p} to tntwars_map_getLobby({_c})
+	clear {_p}'s inventory
+	set slot 0 of {_p}'s inventory to sign named "&eTeam Selector" with lore "&7Right click to select a team"
+
+	message "&c&l&m----------------------------------&f" to {_p}
+	message "&6Map name: &e%tntwars_map_getPrefix({_c})%" to {_p}
+	message "&6Map author: &e%tntwars_map_getAuthor({_c})%" to {_p}
+	message "&c&l&m----------------------------------&e" to {_p}
+	message "&f" to {_p}
+	message "&cRightclick the sign to select a team" to {_p}
+
+	set {_prefix} to {_p}'s prefix
+	set {_p}'s tab name to "%{_prefix}%&f%{_P}%"
+	set {_p}'s flight mode to true
+
+function tntwars_global_getStatus() :: string:
+	return {-tntwars::global::status}
+
+function tntwars_global_getMode() :: string:
+	return {-tntwars::global::mode}
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+#////////////////////////////////////////////////////
+
+function tntwars_global_playerDeath(P: player, cause: string):
+
+	if {_cause} = "void":
+		tntwars_global_teleportPlayer({_P})
+	set {_P}'s gamemode to spectator
+	heal {_P}
+
+	set {_team} to tntwars_team_getTeam({_P})
+	remove 1 from {-tntwars::game::lives::%{_team}%}
+
+	if (check [{_cause} = "self"] and check [{_team} = "blue"]) = true:
+		broadcast "&9%{_P}% &ekilled themselves"
+	
+	else if (check [{_cause} = "self"] and check [{_team} = "red"]) = true:
+		broadcast "&c%{_P}% &ekilled themselves"
+
+	else if (check [{_cause} = "void"] and check [{_team} = "blue"]) = true:
+		broadcast "&9%{_P}% &efell in the void"
+	
+	else if (check [{_cause} = "void"] and check [{_team} = "red"]) = true:
+		broadcast "&c%{_P}% &efell in the void"
+	
+	else if (check [{_cause} = "unkown"] and check [{_team} = "blue"]) = true:
+		broadcast "&9%{_p}% &eblew up"
+
+	else if (check [{_cause} = "unkown"] and check [{_team} = "red"]) = true:
+		broadcast "&c%{_p}% &eblew up"
+	
+	else:	
+		if {_team} = "red":
+			broadcast "&c%{_P}% &egot killed by &9%{_cause}%"
+		
+		else if {_team} = "blue":
+			broadcast "&9%{_P}% &egot killed by &c%{_cause}%"
+
+	tntwars_global_checkLives()
+
+	send {_p} title "&c&lYOU DIED" with subtitle "&4➎" for 1 second with 0.1 seconds fade in and 0.1 seconds fade out
+	wait 1 second
+	send {_p} title "&c&lYOU DIED" with subtitle "&c➍" for 1 second with 0.1 seconds fade in and 0.1 seconds fade out
+	wait 1 second
+	send {_p} title "&c&lYOU DIED" with subtitle "&6➌" for 1 second with 0.1 seconds fade in and 0.1 seconds fade out
+	wait 1 second
+	send {_p} title "&c&lYOU DIED" with subtitle "&e➋" for 1 second with 0.1 seconds fade in and 0.1 seconds fade out
+	wait 1 second
+	send {_p} title "&c&lYOU DIED" with subtitle "&a➊" for 1 second with 0.1 seconds fade in and 0.1 seconds fade out
+	wait 1 second 
+
+	tntwars_global_teleportPlayer({_P})
+	set {_P}'s gamemode to survival
+	heal {_P}
+
+
+function tntwars_global_checkLives():
+	if {-tntwars::game::lives::blue} = 0:
+		tntwars_global_endGame("red")
+	
+	else if {-tntwars::game::lives::red} = 0:
+		tntwars_global_endGame("blue")
+
+#////////////////////////////////////////////////////
+#//////////////////////////////////////////////////// Game ending
+#////////////////////////////////////////////////////
+
+function tntwars_global_endGame(team: string):
+	delete {-tntwars::global::startedByStaffmember}
+	tntwars_global_revealPlayers()
+	set {-tntwars::global::status} to "restarting"
+	if {_team} = "red":
+		loop 2 times:
+			broadcast "&cThe red team has won!"
+	
+	else if {_team} = "blue":
+		loop 2 times:
+			broadcast "&9&lThe blue team has won!"
+	
+	else if {_team} = "time":
+		loop 2 times:
+			broadcast "&c&lThe game has ended due to the time limit being reached!"
+	
+	else if {_team} = "staff":
+		loop 2 times:
+			broadcast "&c&lThe game has been ended by a staffmember!"
+	
+	else if {_team} = "playercount":
+		loop 2 times:
+			broadcast "&c&lThe game has ended due to there not being enough players!"
+
+	loop 10 times:
+		wait 1 second
+		loop all players:
+			set loop-player's level to (10 - loop-number)
+		
+		if loop-number = 1:
+			message "{@prefix} Game restarting in 10 seconds" to all players
+	
+		
+		if loop-number = 5:
+			message "{@prefix} Game restarting in 5 seconds" to all players
+		if loop-number = 6:
+			message "{@prefix} Game restarting in 4 seconds" to all players
+		if loop-number = 7:
+			message "{@prefix} Game restarting in 3 seconds" to all players
+		if loop-number = 8:
+			message "{@prefix} Game restarting in 2 seconds" to all players
+		if loop-number = 9:
+			message "{@prefix} Game restarting in 1 seconds" to all players
+
+	tntwars_global_startGame()
+
+
+function tntwars_global_hidePlayers():
+	loop all players:
+		if tntwars_team_getTeam(loop-player) is set:
+			hide all players where [tntwars_team_getTeam(input) is not set] from loop-player
+			reveal all players where [tntwars_team_getTeam(input) is set] to loop-player
+
+function tntwars_global_revealPlayers():
+	loop all players:
+		reveal all players to loop-player

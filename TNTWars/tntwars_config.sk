@@ -1,0 +1,79 @@
+on load:
+	set {-tntwars::config::prefix} to "&3&ltntwars &8&l»&7"
+
+	delete {-tntwars::config::commands::*}
+	add "mapmanager" to {-tntwars::config::commands::*}
+	add "editmode" to {-tntwars::config::commands::*}
+	add "forcestart" to {-tntwars::config::commands::*}
+	add "forcestop" to {-tntwars::config::commands::*}
+	add "reload" to {-tntwars::config::commands::*}
+	add "destruction" to {-tntwars::config::commands::*}
+	add "setteam [player] [team]" to {-tntwars::config::commands::*}
+	add "setlives [team] [lives]" to {-tntwars::config::commands::*}
+
+	delete {-tntwars::config::mapcommands::*}
+	add "create [name]" to {-tntwars::config::mapcommands::*}
+	add "edit [ID]" to {-tntwars::config::mapcommands::*}
+	add "list" to {-tntwars::config::mapcommands::*}
+	add "reload" to {-tntwars::config::mapcommands::*}
+
+	delete {-tntwars::config::explodableBlocks::*}
+	
+	# Redstone related stuff
+	add dispenser to {-tntwars::config::explodableBlocks::*}
+	add redstone to {-tntwars::config::explodableBlocks::*}
+
+	add any redstone repeater to {-tntwars::config::explodableBlocks::*}
+	add any redstone comparator to {-tntwars::config::explodableBlocks::*}
+	
+	add piston block to {-tntwars::config::explodableBlocks::*}
+	add sticky piston to {-tntwars::config::explodableBlocks::*}
+
+	add redstone torch on to {-tntwars::config::explodableBlocks::*}
+	add redstone torch off to {-tntwars::config::explodableBlocks::*}
+
+	add lever to {-tntwars::config::explodableBlocks::*}
+	add stone button to {-tntwars::config::explodableBlocks::*}
+
+	# other stuff
+	add wooden button to {-tntwars::config::explodableBlocks::*}
+	add stone bricks to {-tntwars::config::explodableBlocks::*}
+	add slime block to {-tntwars::config::explodableBlocks::*}
+
+	#
+	#	Shop stuff
+	#
+
+	delete {-tntwars::config:shopItems::*}
+	add smooth stone bricks to {-tntwars::config:shopItems::*}
+	add stone brick stairs to {-tntwars::config:shopItems::*}
+	add "44" parsed as an item to {-tntwars::config:shopItems::*}
+	add ladder to {-tntwars::config:shopItems::*}
+	add fence to {-tntwars::config:shopItems::*}
+	add water bucket to {-tntwars::config:shopItems::*}
+	add diamond pickaxe to {-tntwars::config:shopItems::*}
+	add diamond axe to {-tntwars::config:shopItems::*}
+	add stone button to {-tntwars::config:shopItems::*}
+	add lever to {-tntwars::config:shopItems::*}
+	add dispenser to {-tntwars::config:shopItems::*}
+	add "redstone repeater" parsed as an item to {-tntwars::config:shopItems::*}
+	add redstone block to {-tntwars::config:shopItems::*}
+	add redstone torch on to {-tntwars::config:shopItems::*}
+	add redstone to {-tntwars::config:shopItems::*}
+	add "33" parsed as an item to {-tntwars::config:shopItems::*}
+	add "sticky piston" parsed as an item to {-tntwars::config:shopItems::*}
+	add slime block to {-tntwars::config:shopItems::*}
+	add stone pressure plate to {-tntwars::config:shopItems::*}
+	add sand to {-tntwars::config:shopItems::*}
+	add oak trapdoor to {-tntwars::config:shopItems::*}
+
+
+	delete {-tntwars::config::modes::*}
+	add "noscatter" to {-tntwars::config::modes::*}
+	add "grace" to {-tntwars::config::modes::*}
+
+function tntwars_config_getCommands() :: objects:
+	return {-tntwars::config::commands::*}
+
+function tntwars_map_getCommands() :: objects:
+	return {-tntwars::config::mapcommands::*}

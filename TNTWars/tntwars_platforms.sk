@@ -1,0 +1,68 @@
+options:
+	prefix: &c&lTNT
+	small platform cooldown: 30 seconds
+	medium platform cooldown: 80 seconds
+	big platform cooldown: 180 seconds
+
+
+on right click:
+	player's held item is shiny nether star named "&6&lPlatforms Builder" with lore "&7Right click to build platforms!"
+	tntwars_shop_openPlatform(player)
+
+function tntwars_shop_openPlatform(P: player):
+	open virtual chest with 3 rows named "&6&lPlatforms Builder" to {_P}
+
+	format gui slot 11 of {_P} with shiny yellow wool named "&eSmall Platform" with lore "&7Left click to build a small platform||&cCooldown: {@small platform cooldown}" to close then run function tntwars_shop_buildPlatformAttempt({_P}, 8, {@small platform cooldown})
+	format gui slot 13 of {_P} with shiny yellow wool named "&eMedium Platform" with lore "&7Left click to build a medium platform||&cCooldown: {@medium platform cooldown}" to close then run function tntwars_shop_buildPlatformAttempt({_P}, 14, {@medium platform cooldown})
+	format gui slot 15 of {_P} with shiny yellow wool named "&eBig Platform" with lore "&7Left click to build a big platform||&cCooldown: {@big platform cooldown}" to close then run function tntwars_shop_buildPlatformAttempt({_P}, 16, {@big platform cooldown})
+
+function tntwars_shop_buildPlatformAttempt(P: player, size: integer, cooldown: timespan):
+	set {_timer} to cd_getTimer({_P})
+	if {_timer} is set:
+		send "{@prefix} &cYou cannot build another platform for %{_timer}%!" to {_P}
+		stop
+
+	send "{@prefix} &7Platform build begun, you will not be able to build another platform for %{_cooldown}%!" to {_P}
+	cd_triggerTimer({_P}, {_cooldown})
+	platform_build({_P}, {_size})
+
+
+function platform_build(p: player, size: integer):
+
+	set {_base} to location of block below {_p}
+
+	set {_pos1} to location ({_size} / 2) meters north of {_base}
+	set {_pos1} to location ({_size} / 2) meters west of {_pos1}
+	set {_pos1}'s y-coordinate to {_pos1}'s y-coordinate - 1
+
+	set {_pos2} to location ({_size} / 2) meters south of {_base}
+	set {_pos2} to location ({_size} / 2) meters east of {_pos2}
+
+	set {_x} to 0
+	loop all blocks within {_pos1} and {_pos2}:
+		# set {_r} to region at location of loop-block
+		if "%region at location of loop-block%" doesn't contain "spawn":
+			set loop-block to yellow wool
+			add 1 to {_x}
+			if mod({_x}, 60) = 0:
+				wait 1 tick
+
+function cd_triggerTimer(p: player, length: time span):
+	set {_u} to {_p}'s UUID
+	set {cd::timer::%{_u}%} to now
+	set {cd::timer::%{_u}%::length} to {_length}
+
+function cd_cancelTimer(p: player):
+	set {_u} to {_p}'s UUID
+	delete {cd::timer::%{_u}%}
+	delete {cd::timer::%{_u}%::length}
+
+function cd_getTimer(p: player) :: timespan:
+	set {_u} to {_p}'s UUID
+	{cd::timer::%{_u}%} is set
+	set {_waited} to difference between {cd::timer::%{_u}%} and now
+	if {_waited} < {cd::timer::%{_u}%::length}:
+		set {_time} to difference between {cd::timer::%{_u}%::length} and {_waited}
+		return {_time}
+	else:
+		cd_cancelTimer({_p})

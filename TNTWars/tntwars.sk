@@ -1,0 +1,149 @@
+options:
+	prefix: %{-tntwars::config::prefix}%
+
+function checkPermission(P: player, permission: string = "tntwars.*") :: boolean:
+	if {_p} has permission "%{_permission}%":
+		return true
+	return false
+
+on join:
+	wait 10 ticks
+	tntwars_global_lobby(player)
+	tntwars_global_hidePlayers()
+
+on click:
+	if {-tntwars::playerdata::%player's uuid%::editmode} = true:
+		stop
+	if tntwars_team_getTeam(player) is not set:
+		cancel event
+
+on right click:
+	if player's tool = sign named "&eTeam Selector" with lore "&7Right click to select a team":
+		cancel event
+
+		if {-tntwars::global::tournamentMode} is set:
+			message "{@prefix} &7Tournament mode is currently enabled. You cannot choose a team manually!"
+			stop
+
+		tntwars_team_openSelector(player)
+
+every second:
+	if tntwars_global_getStatus() = "playing":
+		remove 1 second from {-tntwars::game:timeLeft}
+		if {-tntwars::game:timeLeft} = 0 seconds:
+			tntwars_global_endGame("time")
+		
+		if {-tntwars::game::gracePeriod} is set:
+			remove 1 from {-tntwars::game::gracePeriod}
+			loop all players:
+				set loop-player's level to {-tntwars::game::gracePeriod}
+
+			if {-tntwars::game::gracePeriod} = 0:
+
+				delete {-tntwars::game::gracePeriod}
+				delete {-tntwars::global::nodestruction}
+
+				broadcast "{@prefix} &7The grace period has ended! Cannons can now deal damage!"
+
+
+on skript load:
+	wait 10 seconds
+	tntwars_global_startGame()
+
+on any move:
+	player's y-coordinate < 15
+
+	set {_l} to player's location
+	add 100 to y-coordinate of {_l}
+	teleport player to {_l}
+
+	if tntwars_global_getStatus() = "playing":
+		if tntwars_team_getTeam(player) is set:
+			tntwars_global_playerDeath(player, "void")
+		else:
+			tntwars_global_lobby(player)
+	else:
+		tntwars_global_lobby(player)
+
+on damage:
+	if tntwars_team_getTeam(victim) is not set:
+		cancel event
+	else if tntwars_global_getStatus() != "playing":
+		cancel event
+
+on disconnect:
+	if tntwars_team_getTeam(player) is set:
+		if tntwars_global_getStatus() = "playing":
+			tntwars_team_removePlayer(player)
+			if tntwars_global_checkTeams() = false:
+				if {-tntwars::global::startedByStaffmember} is not set:
+					tntwars_global_endGame("playercount")
+		
+		else:
+			tntwars_team_removePlayer(player)
+
+
+on spawn:
+	if event-entity is not a player:
+		cancel event
+		kill event-entity
+
+
+#///////////////////////////////////////////////
+#///////////////////////////////////////////////
+#///////////////////////////////////////////////
+
+function tntwars_general_prettyTime(in: timespan, split: boolean = true) :: string:
+	set {_in} to "%{_in}%"
+	set {_in::*} to {_in} split at  " "
+	set {_size} to size of {_in::*}
+	set {_rtr} to ""
+	set {_last} to ""
+	set {_i} to 0
+	loop {_size} times:
+		{_in::%loop-value%} != "and"
+		add 1 to {_i}
+		if {_i} mod 2 = 1:
+			set {_v::*} to {_in::%loop-value%} split at "."
+			set {_value} to {_v::1}
+			if {_split} = true:
+				set {_value2} to {_v::2}
+
+			set {_unit} to {_in::%loop-value+1%}
+			if {_unit} = "seconds" or "second":
+				set {_rtr} to "%{_rtr}%%{_last}%%{_value}%"
+				set {_last} to "s"
+				if {_value2} is set:
+					set {_rtr} to "%{_rtr}%%{_last}% %{_v::2}%"
+					set {_last} to "ms"
+			if {_unit} = "minutes" or "minute":
+				set {_rtr} to "%{_rtr}%%{_last}%%{_value}%"
+				set {_last} to "m "
+			if {_unit} = "hours" or "hour":
+				set {_rtr} to "%{_rtr}%%{_last}%%{_value}%"
+				set {_last} to "h "
+	return "%{_rtr}%%{_last}%"
+
+
+on break:
+	if {-tntwars::playerdata::%player's uuid%::editmode} = true:
+		stop
+	if tntwars_global_getStatus() != "playing":
+		cancel event
+	else:
+		if tntwars_team_getTeam(player) is not set:
+			cancel event
+
+on place:
+	if {-tntwars::playerdata::%player's uuid%::editmode} = true:
+		stop
+	if tntwars_global_getStatus() != "playing":
+		cancel event
+	else:
+		if tntwars_team_getTeam(player) is not set:
+			cancel event
+
+on drop:
+	if player's tool = sign named "&eTeam Selector" with lore "&7Right click to select a team":
+		cancel event
+
