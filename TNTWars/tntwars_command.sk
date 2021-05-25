@@ -1,0 +1,168 @@
+options:
+	prefix: %{-tntwars::config::prefix}%
+
+command /tntwars [<string>] [<string>] [<string>]:
+	trigger:
+		if checkPermission(player, "tntwars.command") is true:
+			if arg 1 = "mapmanager":
+				if checkPermission(player, "tntwars.mapmanager") is false:
+					message "{@prefix} You do not have the required permission to do this!"
+					stop
+
+				message "{@prefix} Redirecting to mapmanager command (/map)"
+				execute player command "map admin"
+				stop
+			
+			else if arg 1 = "forcestop":
+				tntwars_global_endGame("staff")
+			
+			else if arg 1 = "setteam":
+				if arg 3 is not set:
+					message "{@prefix} &cUsage: /tntwars setteam [player] [team]"
+					stop
+				
+				set {_p} to arg-2 parsed as a player
+				if {_p} is not set:
+					message "{@prefix} &cThe specified player is invalid"
+					stop
+				
+				if tntwars_team_getTeam({_P}) is set:
+					tntwars_team_removePlayer({_P})
+
+				if arg 3 = "red":
+					tntwars_team_addPlayer({_p}, "red")
+					message "{@prefix} &aSuccessfully changed %{_p}% their team to &c&lred"
+					set {_set} to true
+
+				else if arg 3 = "blue":
+					tntwars_team_addPlayer({_P}, "blue")
+					message "{@prefix} &aSuccessfully changed %{_p}% their team to &9&lblue"
+					set {_set} to true
+				
+				else if arg 3 = "spectator":
+					tntwars_team_removePlayer({_P})
+					message "{@prefix} &aSuccessfully changed %{_p}% their team to &e&lSpectator"
+					set {_set} to true
+
+				else:
+					message "{@prefix} &cThe specified team is invalid (blue or red)"
+
+				{_set} is true
+				if tntwars_global_getStatus() = "playing":
+					tntwars_global_teleportPlayer({_p}, true)
+					stop
+
+			else if arg 1 = "tournament":
+				if {-tntwars::global::tournamentMode} is set:
+					delete {-tntwars::global::tournamentMode}
+					message "{@prefix} &cDisabled tournament mode"
+					stop
+				else:
+					set {-tntwars::global::tournamentMode} to true
+					message "{@prefix} &aEnabled tournament mode"
+					stop
+
+			else if arg 1 = "forcestart":
+				set {-tntwars::global::status} to "playing"
+				loop all players where [tntwars_team_getTeam(input) is set]:
+					wait 1 tick
+					tntwars_global_teleportPlayer(loop-player, true)
+
+				message "{@prefix} The game has started" to all players
+
+				set {_id} to tntwars_global_getCurrentMap()
+				set {_world} to tntwars_map_getWorld({_id})
+
+				set {-tntwars::global::startedByStaffmember} to true
+				execute console command "mv modify set difficulty normal %{_world}%"
+
+			else if arg 1 = "editmode":
+				if {-tntwars::playerdata::%player's uuid%::editmode} is not set:
+					set {-tntwars::playerdata::%player's uuid%::editmode} to true
+					message "{@prefix} &aEnabled editmode"
+					stop
+				else:
+					delete {-tntwars::playerdata::%player's uuid%::editmode}
+					message "{@prefix} &cDisabled editmode"
+					stop
+				
+			else if arg 1 = "destruction":
+				if {-tntwars::global::nodestruction} is not set:
+					set {-tntwars::global::nodestruction} to true
+					message "{@prefix} &cDisabled destruction"
+					stop
+				else:
+					delete {-tntwars::global::nodestruction}
+					message "{@prefix} &aEnabled destruction"
+					stop
+			
+			else if arg 1 = "setlives":
+				if arg 3 is not set:
+					message "{@prefix} &cUsage: /tntwars setwool <team> <amount>"
+					stop
+				
+				if arg 2 is not "red" or "blue":
+					message "{@prefix} &cInvalid team! Choose between red and blue"
+					stop
+				
+				if arg 3 parsed as an integer is not set:
+					message "{@prefix} &cCan only set lives to a number!"
+					stop
+
+				set {-tntwars::game::lives::%arg-2%} to arg-3 parsed as an integer
+				message "{@prefix} &aSet %arg-2% their lives to %arg-3%"
+				stop
+			
+			else if arg 1 = "lobbyall":
+				loop all players:
+					tntwars_global_lobby(loop-player)
+			else if arg 1 = "mode":
+				if arg 2 is not set:
+					message "{@prefix} &7Usage: /tntwars mode <mode/list>"
+					stop
+				
+				if arg 2 = "list":
+					set {_modes::*} to {-tntwars::config::modes::*}
+					message "{@prefix} &aPossible modes:"
+					loop {_modes::*}:
+						message "{@prefix} &e%loop-value%"
+					stop
+
+				if arg 2 = "none":
+					delete {-tntwars::global::mode}
+					message "{@prefix} &aDisabled tntwars modes"
+					stop
+					
+				if {-tntwars::config::modes::*} doesn't contain arg-2:
+					message "{@prefix} &cInvalid mode! do /tntwars mode list for a list of modes"
+					stop
+				
+				
+				set {-tntwars::global::mode} to arg-2
+				message "{@prefix} &aChanged the playing mode to %arg-2%"
+				stop
+
+			else if arg 1 is not set:
+
+				set {_color} to "e"
+
+				loop tntwars_config_getCommands():	
+					message "{@prefix} &f┣ &%{_color}%%loop-value%"
+
+					if {_color} = "e":
+						set {_color} to "6"
+					else if {_color} = "6":
+						set {_color} to "e"
+			
+			else:
+				set {_color} to "e"
+				loop tntwars_config_getCommands():	
+					message "{@prefix} &f┣ &%{_color}%%loop-value%"
+
+					if {_color} = "e":
+						set {_color} to "6"
+					else if {_color} = "6":
+						set {_color} to "e"
+		else:
+			message "{@prefix} You do not have the required permission to do this!"
+			stop
