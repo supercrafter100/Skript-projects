@@ -64,3 +64,8 @@ Once you did this you successfully set up the regions for your map. And it shoul
 > **:warning: WARNING**: You need at least 2 maps in the mapmanager for the system to work correctly. Not doing this will probably break the system!
 
 Congratulations! You should now have a working TNTWars system on your playerserver.
+
+## Stopping tnt from being laggy
+
+You may notice that TNT can be a bit laggy in your playerserver. This is due to the max-tnt-per-tick being really low by default. You can fix this
+by going to your file manager --> spigot.yml and changing `max-tnt-per-tick` to a really high number. After this, restart your server and everyting should work!
