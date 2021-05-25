@@ -38,15 +38,18 @@ After which you can start editing the map itself
 When seeing the list, click on the map that you want to edit. This will bring up a clickable interface in your chat where
 you can setup your map. Here is a list of what each setting means:
 
-ID: The ID of the map. This cannot be changed
-Prefix: The name of the map
-Author: The creator of the map
-Item: The item that will display in the map selector (isn't added in this version. And I don't know if I ever will)
-World: The world name of the map. Used for managing map reloading
-RedSpawn: The location of the spawn of the red team
-BlueSpawn: The location of the spawn of the blue team
-Lobby: The location of the map lobby
-Status: The status of the map, this can be enabled or construction (disabled)
+
+| Type  | Meaning |
+| ------------- | ------------- |
+| ID | The ID of the map. This cannot be changed |
+| Prefix | The name of the map |
+| Author | The craetor of the map |
+| Item | The item that will display in the map selector |
+| World | The world name of the map. Used foor managing map reloading |
+| RedSpawn | The location of the spawn of the red team |
+| BlueSpawn | The location of the spawn of the blue team |
+| Lobby | The location of the map lobby |
+| Status | The status of the map, this can be enabled or construction (disabled) |
 
 
 ### Setting up regions
