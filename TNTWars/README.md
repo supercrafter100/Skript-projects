@@ -65,6 +65,7 @@ Setting up regions is probably the most annoying part of this. As it requires qu
 Once you did this you successfully set up the regions for your map. And it should all be finished!
 
 > **:warning: WARNING**: You need at least 2 maps in the mapmanager for the system to work correctly. Not doing this will probably break the system!
+> **:warning: IMPORTANT**: To make dispensers filled automatically, you will need to set the variable `{tntwars::random::dispenserNBT}` to the nbt of a filled dispenser
 
 Congratulations! You should now have a working TNTWars system on your playerserver.
 
