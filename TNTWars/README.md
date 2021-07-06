@@ -45,7 +45,7 @@ you can setup your map. Here is a list of what each setting means:
 | Prefix | The name of the map |
 | Author | The creator of the map |
 | Item | The item that will display in the map selector |
-| World | The world name of the map. Used foor managing map reloading |
+| World | The world name of the map. Used for managing map reloading |
 | RedSpawn | The location of the spawn of the red team |
 | BlueSpawn | The location of the spawn of the blue team |
 | Lobby | The location of the map lobby |
