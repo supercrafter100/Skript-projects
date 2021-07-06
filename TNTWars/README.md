@@ -62,6 +62,8 @@ Setting up regions is probably the most annoying part of this. As it requires qu
 4. Select the spawn of the red team and define a region named `tntwars_<mapname>_redteam_spawn`
 5. Select the lobby of the map and define a region named `tntwars_<mapname>_spawn`
 
+> **:warning: WARNING**: Make sure you enable building & tnt in all regions so you can actually play the game!
+
 Once you did this you successfully set up the regions for your map. And it should all be finished!
 
 > **:warning: WARNING**: You need at least 2 maps in the mapmanager for the system to work correctly. Not doing this will probably break the system!
