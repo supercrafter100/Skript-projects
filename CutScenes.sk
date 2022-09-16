@@ -215,17 +215,101 @@ command /cutscenes [<string>] [<string>] [<string>] [<string>]:
 					set {-cutscenes::players::%player's uuid%::isViewing} to true
 					message "{@success} &7Now viewing control points locations"
 					
-	
+
+		else if arg 1 = "project":
+			if arg 2 = "create":
+				if arg 3 is not set:
+					message "{@error} &7Please enter a name for the project."
+					stop
+				
+				if arg 4 is set:
+					message "{@error} &7The scene name cannot contain spaces."
+					stop
+
+				set {_id} to getID(5)
+				add {_id} to {cutscenes::projects::*}
+				set {cutscenes::project::%{_id}%::name} to arg 3
+				message "{@success} &7New project created with id &a%{_id}%&7! View and edit projects using <cmd:/cutsenes project list>&a/cutscenes project list"
+			
+			else if arg 2 = "list":
+				if size of {cutscenes::projects::*} < 1:
+					message "{@error} &7No projects have been created"
+					stop
+			
+				message "&7==========(&f CutScenes &7)=========="
+				message "&f"
+				loop {cutscenes::projects::*}:
+					set {_name} to {cutscenes::project::%loop-value%::name}
+					send "&f%loop-index%. &a%loop-value% > %{_name}%  <cmd:/cutscenes project edit %loop-value%><ttp:&7Click to edit &b%loop-value%>&3[CLICK]"
+				message "&e"
+				message "&7==========(&f CutScenes &7)=========="
+
+			else if arg 2 = "edit":
+				if arg 3 is not set:
+					message "{@error} Please specify the id of the project you want to edit"
+					stop
+				
+				if {cutscenes::projects::*} doesn't contain arg 3:
+					message "{@error} The specified id is not a project"
+					stop
+
+				make player execute "/cutsprojecteditor edit %arg 3%"
+
+			else if arg 2 = "delete ":
+				if arg 3 is not set:
+					message "{@error} Please specify the id of the project you want to play"
+					stop
+				
+				if {cutscenes::projects::*} doesn't contain arg 3:
+					message "{@error} The specified id is not a project"
+					stop
+
+				set {_id} to arg 3
+				remove {_id} from {cutscenes::projects::*}
+				loop {cutscenes::project::%{_id}%::steps::*}:
+					delete {cutscenes::project::%{_id}%::step::%loop-value%::*}
+					delete {cutscenes::project::%{_id}%::step::%loop-value%}
+				delete {cutscenes::project::%{_id}%::steps::*}
+				delete {cutscenes::project::%{_id}%::name}
+				message "{@success} Project deleted..." 
+
+			else if arg 2 = "start":
+				if arg 3 is not set:
+					message "{@error} Please specify the id of the project you want to play"
+					stop
+				
+				if {cutscenes::projects::*} doesn't contain arg 3:
+					message "{@error} The specified id is not a project"
+					stop
+				
+				cuts_playProject(player, arg 3)
+			
+			else if arg 2 = "help":
+				message "&7==========(&f CutScenes &7)=========="
+				message "&f"
+				message "&e/cutscenes project create <name> &f| &7Create a new project"
+				message "&e/cutscenes project list &f| &7List all projects"
+				message "&e/cutscenes project edit <id> &f| &7Edit a project"
+				message "&e/cutscenes project start <id> &f| &7Start a project run"
+				message "&e/cutscenes project delete <id> &f| &7Delete a project"
+				message "&r"
+				message "&7==========(&f CutScenes &7)=========="
+			
+			else:
+				message "{@error} &7Unkown command. Type &c/cutscenes project help &7for a list of all commands"
+
 		else if arg 1 = "help":
 
 			message "&7==========(&f CutScenes &7)=========="
 			message "&f"
+			message "&e/cutscenes project ... &f| &7Project tools"
 			message "&e/cutscenes create <name> &f| &7Create a scene"
 			message "&e/cutscenes delete <id> &f| &7Delete a scene"
 			message "&e/cutscenes edit <id> &f| &7Edit a scene"
 			message "&e/cutscenes start <id> &f| &7Start a scene"
 			message "&e/cutscenes setspeed <id> <integer> &f| &7set the speed of a scene"
 			message "&e/cutscenes render <id> &f| &7Render a scene"
+			message "&e/cutscenes list &f| &7List out all scenes"
 			message "&r"
 			message "&7==========(&f CutScenes &7)=========="
 		
@@ -318,7 +402,7 @@ function renderPath(id: string):
 	message "{@success} &7Successfully rendered the scene. &c(It took %{_diff}%)" to {-cutscenes::scene::%{_id}%::issuedRender}
 	delete {-cutscenes::scene::%{_id}%::isRendering}
 
-function startCutscene(id: string, player: player):
+function startCutscene(id: string, player: player, teleportOnEnd: boolean = true):
 	if {-cutscenes::player::%{_Player}%::inScene} is set:
 		message "{@error} &7You are already in a cutscene." to {_player}
 		stop
@@ -330,9 +414,9 @@ function startCutscene(id: string, player: player):
 	# 
 	# Save some parameters for user convenience
 	#
-	set {_oldGamemode} to {_player}'s gamemode
-	set {_oldLocation} to {_player}'s location
-	set {_player}'s gamemode to spectator
+	if {_teleportOnEnd} = true:
+		set {_oldGamemode} to {_player}'s gamemode
+		set {_oldLocation} to {_player}'s location
 
 	set {_P} to {_player}
 	set {-cutscenes::player::%{_Player}%::inScene} to true
@@ -345,20 +429,24 @@ function startCutscene(id: string, player: player):
 	loop {_points::*}:
 		if {-cutscenes::player::%{_player}%::exitScene} is set:
 			delete {-cutscenes::player::%{_player}%::exitScene}
+			delete {-cutscenes::player::%{_Player}%::inScene}
 			stop
+		if {_P}'s gamemode != spectator:
+			set {_P}'s gamemode to spectator
 		teleport {_player} to loop-value
 		set {_int} to loop-index parsed as an integer
 		if {_int} mod {_cooldown} = 0:
 			wait 1 tick
 		
-	set gamemode of {_player} to {_oldGamemode}
-	teleport {_player} to {_oldLocation}
+	if {_teleportOnEnd} = true:
+		set gamemode of {_player} to {_oldGamemode}
+		teleport {_player} to {_oldLocation}
 	delete {-cutscenes::player::%{_Player}%::inScene}
 
 
 
 
-#============( Curves functions )===========( Thank you Gigi for helping me with this lol )===============
+#============( Curves functions )==========
 
 function catmull(p0: number, p1: number, p2: number, p3: number, t: number) :: number:
 
@@ -367,6 +455,7 @@ function catmull(p0: number, p1: number, p2: number, p3: number, t: number) :: n
 	set {_3} to (2 * {_p0} - 5 * {_p1} + 4 * {_p2} - {_p3}) * ({_t}^2)
 	set {_4} to ({_p0} *-1 + 3 * {_p1} - 3 * {_p2} + {_p3}) * ({_t}^3)
 	return ( {_1} + {_2} + {_3} + {_4} )/2
+
 
 #============( Random functions )==========
 
