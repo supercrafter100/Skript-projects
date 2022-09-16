@@ -1,0 +1,251 @@
+options:
+	error: &8(&c*&8)
+	success: &8(&a*&8)
+	warning: &8(&e*&8)
+
+command /cutsprojecteditor [<string>] [<string>] [<string>] [<string>]:
+	trigger:
+		if player doesn't have permission "cutscenes.command":
+			message "{@error} &7You do not have the required permission to do this."
+			stop
+		
+		if arg 1 = "edit":
+			cuts_sendChatOverview(player, arg 2)
+		
+		if arg 1 = "addmove":
+			message "{@warning} &7Please select a move from the list to add to the project"
+			message "&f"
+			loop {cutscenes::ids::*}:
+				set {_name} to {cutscenes::scenes::%loop-value%::name}
+				send "&f%loop-index%. &a%loop-value% > %{_name}%  <cmd:/cutsprojecteditor admin addmove %arg 2% %loop-value%><ttp:&7Click to add &b%loop-value%>&3[click]"
+		
+		if arg 1 = "addtitle":
+			message "{@warning} &7Please type the text to display on the title in chat. Type cancel to cancel"
+			set {-cutscenes::player::%player%::project::awaitingTitleInput} to arg 2
+		
+		if arg 1 = "adddelay":
+			message "{@warning} &7Please type the amount of seconds of delay in chat. Type cancel to cancel"
+			set {-cutscenes::player::%player%::project::awaitingDelayInput} to arg 2
+		
+		if arg 1 = "addmovedelay":
+			set {_id} to arg 2
+			set {_step} to getID(5)
+			set {cutscenes::project::%{_id}%::step::%{_step}%::type} to "delayscene"
+			add {_step} to {cutscenes::project::%{_id}%::steps::*}		
+			cuts_sendChatOverview(player, {_id})
+
+		if arg 1 = "movestepup":
+			set {_id} to arg 2
+			set {_step} to arg 3
+
+			set {_steps::*} to {cutscenes::project::%{_id}%::steps::*}
+			set {_stepSize} to size of {_steps::*}
+			if {_stepSize} = 1:
+				cuts_sendChatOverview(player, {_id})
+				stop
+			
+			loop {_stepSize} times:
+				if {_steps::%loop-number + 1%} = {_step}:
+					
+					add {_step} to {_newSteps::*}
+					add {_steps::%loop-number%} to {_newSteps::*}
+
+				else if {_steps::%loop-number%} != {_step}:
+					add {_steps::%loop-number%} to {_newSteps::*}
+
+			set {cutscenes::project::%{_id}%::steps::*} to {_newSteps::*}
+			cuts_sendChatOverview(player, {_id})
+
+		if arg 1 = "movestepdown":
+			set {_id} to arg 2
+			set {_step} to arg 3
+
+			set {_steps::*} to {cutscenes::project::%{_id}%::steps::*}
+			set {_stepSize} to size of {_steps::*}
+			if {_stepSize} = 1:
+				cuts_sendChatOverview(player, {_id})
+				stop
+			
+			loop {_stepSize} times:
+				if {_steps::%loop-number%} = {_step}:
+					add {_steps::%loop-number + 1%} to {_newSteps::*}	
+					add {_step} to {_newSteps::*}
+					set {_skip} to {_steps::%loop-number + 1%}
+
+				else if {_steps::%loop-number%} != {_skip}:
+					add {_steps::%loop-number%} to {_newSteps::*}
+			
+			set {cutscenes::project::%{_id}%::steps::*} to {_newSteps::*}
+			cuts_sendChatOverview(player, {_id})
+
+		if arg 1 = "deletestep":
+			set {_id} to arg 2
+			set {_step} to arg 3
+
+			delete {cutscenes::project::%{_id}%::step::%{_step}%::*}
+			delete {cutscenes::project::%{_id}%::step::%{_step}%}
+			remove {_step} from  {cutscenes::project::%{_id}%::steps::*}
+			message "{@success} &7Deleted step from your project."
+			cuts_sendChatOverview(player, {_id})
+		
+		if arg 1 = "editstep":
+			set {cutscenes::player::%player%::project::editingStep} to arg 3
+
+			set {_type} to {cutscenes::project::%arg 2%::step::%arg 3%::type}
+			if {_type} = "move":
+				execute player command "/cutsprojecteditor addmove %arg 2%"
+			if {_type} = "delay":
+				execute player command "/cutsprojecteditor adddelay %arg 2%"
+			if {_type} = "title":
+				execute player command "/cutsprojecteditor addtitle %arg 2%"
+
+		if arg 1 = "admin":
+			if arg 2 = "addmove":
+				set {_id} to arg 3
+				set {_moveName} to arg 4
+
+				if {cutscenes::player::%player%::project::editingStep} is set:
+					set {_step} to {cutscenes::player::%player%::project::editingStep}
+				else:
+					set {_step} to getID(5)
+				set {cutscenes::project::%{_id}%::step::%{_step}%::type} to "move"
+				set {cutscenes::project::%{_id}%::step::%{_step}%::move} to {_moveName}
+				if {cutscenes::player::%player%::project::editingStep} is not set:
+					add {_step} to {cutscenes::project::%{_id}%::steps::*}
+					
+				cuts_sendChatOverview(player, {_id})
+				delete {cutscenes::player::%player%::project::editingStep}
+on chat:
+	if {-cutscenes::player::%player%::project::awaitingTitleInput} is set:
+		cancel event
+		set {_id} to {-cutscenes::player::%player%::project::awaitingTitleInput}
+		delete {-cutscenes::player::%player%::project::awaitingTitleInput}
+
+		if message = "cancel":
+			stop
+
+		set {-cutscenes::player::%player%::project::titleInputResult} to message
+		message "{@warning} &7Please type the text to display on the subtitle in chat. Type cancel to cancel, type none to put nothing"
+		set {-cutscenes::player::%player%::project::awaitingSubTitleInput} to {_id}
+		stop
+
+	if {-cutscenes::player::%player%::project::awaitingSubTitleInput} is set:
+		cancel event
+		set {_id} to {-cutscenes::player::%player%::project::awaitingSubTitleInput}
+		delete {-cutscenes::player::%player%::project::awaitingSubTitleInput}
+
+		if message = "cancel":
+			stop
+		
+		if {cutscenes::player::%player%::project::editingStep} is set:
+			set {_step} to {cutscenes::player::%player%::project::editingStep}
+		else:
+			set {_step} to getID(5)
+		set {cutscenes::project::%{_id}%::step::%{_step}%::type} to "title"
+		set {cutscenes::project::%{_id}%::step::%{_step}%::title} to {-cutscenes::player::%player%::project::titleInputResult}
+		if message != "none":
+			set {cutscenes::project::%{_id}%::step::%{_step}%::subtitle} to message
+		
+		if {cutscenes::player::%player%::project::editingStep} is not set:
+			add {_step} to {cutscenes::project::%{_id}%::steps::*}
+		cuts_sendChatOverview(player, {_id})
+		delete {-cutscenes::player::%player%::project::titleInputResult}
+		delete {cutscenes::player::%player%::project::editingStep}
+		stop
+	
+	if {-cutscenes::player::%player%::project::awaitingDelayInput} is set:
+		cancel event
+		set {_id} to {-cutscenes::player::%player%::project::awaitingDelayInput}
+
+		if message = "cancel":
+			delete {-cutscenes::player::%player%::project::awaitingDelayInput}
+			stop
+		
+		if message parsed as a number is not set:
+			message "{@error} The provided message is not a number! Try again..."
+			stop
+		
+		delete {-cutscenes::player::%player%::project::awaitingDelayInput}
+
+		set {_num} to message parsed as a number
+		if {cutscenes::player::%player%::project::editingStep} is set:
+			set {_step} to {cutscenes::player::%player%::project::editingStep}
+		else:
+			set {_step} to getID(5)
+		set {cutscenes::project::%{_id}%::step::%{_step}%::type} to "delay"
+		set {cutscenes::project::%{_id}%::step::%{_step}%::delay} to {_num}
+		if {cutscenes::player::%player%::project::editingStep} is not set:
+			add {_step} to {cutscenes::project::%{_id}%::steps::*}
+		cuts_sendChatOverview(player, {_id})
+		delete {cutscenes::player::%player%::project::editingStep}
+		stop
+
+#============( Project editing )==========
+function cuts_sendChatOverview(p: player, id: string):
+
+	set {_name} to {cutscenes::project::%{_id}%::name}
+	set {_steps::*} to {cutscenes::project::%{_id}%::steps::*}
+
+	message "&7==========(&f CutScenes &7)==========" to {_P}
+	message "&f" to {_P}
+	message "&e&l%{_name}%" to {_P}
+	message "&eScene overview" to {_P}
+	message "&8-------------------------------&f" to {_P}
+	
+	loop {_steps::*}:
+		set {_type} to {cutscenes::project::%{_id}%::step::%loop-value%::type}
+		if {_type} = "move":
+			set {_moveId} to {cutscenes::project::%{_id}%::step::%loop-value%::move}
+			message "&7%loop-index%. &fType: &bmove &7| &fscene: &b%{_moveId}% &7| %cuts_stepControls({_id}, loop-value)%" to {_P}
+		
+		if {_type} = "title":
+			set {_title} to {cutscenes::project::%{_id}%::step::%loop-value%::title}
+			message "&7%loop-index%. &fType: &btitle &7| &ftext: &b%{_title}% &7| %cuts_stepControls({_id}, loop-value)%" to {_P}
+
+		if {_type} = "delay":
+			set {_delay} to {cutscenes::project::%{_id}%::step::%loop-value%::delay}
+			message "&7%loop-index%. &fType: &bdelay &7| &fdelay: &b%{_delay}% seconds &7| %cuts_stepControls({_id}, loop-value)%" to {_P}
+		
+		if {_type} = "delayscene":
+			message "&7%loop-index%. &fType: &bdelay until scene ends &7| %cuts_stepControls({_id}, loop-value, false)%" to {_P}
+
+	message "&8-------------------------------" to {_P}
+	message "&eAdd move <ttp:&7Click to add a new move to the project list><cmd:/cutsprojecteditor addmove %{_id}%>&3[click]" to {_P}
+	message "&eAdd title <ttp:&7Click to add a title to the project list><cmd:/cutsprojecteditor addtitle %{_id}%>&3[click]" to {_P}
+	message "&eAdd delay <ttp:&7Click to add a delay to the project list><cmd:/cutsprojecteditor adddelay %{_id}%>&3[click]" to {_P}
+	message "&eAdd delayUntilSceneEnd <ttp:&7Click to add a delay that waits until the last move ended><cmd:/cutsprojecteditor addmovedelay %{_id}%>&3[click]" to {_P}
+
+	message "&e" to {_P}
+	message "&7==========(&f CutScenes &7)==========" to {_P}
+
+function cuts_stepControls(id: string, step: string, showEdit: boolean = true) :: string:
+	if {_showEdit} = true:
+		return "<ttp:&7Click to edit><cmd:/cutsprojecteditor editstep %{_id}% %{_step}%>&a[edit] <ttp:&7Click to remove><cmd:/cutsprojecteditor deletestep %{_id}% %{_step}%>&c[delete] <ttp:&7Click to move up><cmd:/cutsprojecteditor movestepup %{_id}% %{_step}%>&3[↑] <ttp:&7Click to move down><cmd:/cutsprojecteditor movestepdown %{_id}% %{_step}%>&3[↓]"
+	else:
+		return "<ttp:&7Click to remove><cmd:/cutsprojecteditor deletestep %{_id}% %{_step}%>&c[delete] <ttp:&7Click to move up><cmd:/cutsprojecteditor movestepup %{_id}% %{_step}%>&3[↑] <ttp:&7Click to move down><cmd:/cutsprojecteditor movestepdown %{_id}% %{_step}%>&3[↓]"
+
+
+function cuts_playProject(p: player, id: string):
+	set {_steps::*} to {cutscenes::project::%{_id}%::steps::*}
+	loop {_steps::*}:
+		set {_type} to {cutscenes::project::%{_id}%::step::%loop-value%::type}
+		if {_type} = "move":
+			set {_moveId} to {cutscenes::project::%{_id}%::step::%loop-value%::move}
+			startCutscene({_moveId}, {_p})
+		
+		if {_type} = "title":
+			set {_title} to {cutscenes::project::%{_id}%::step::%loop-value%::title}
+			set {_subtitle} to {cutscenes::project::%{_id}%::step::%loop-value%::subtitle}
+
+			if {_subtitle} is set:
+				send {_p} title {_title} with subtitle {_subtitle}
+			else:
+				send {_p} title {_title}
+
+		if {_type} = "delay":
+			set {_delay} to {cutscenes::project::%{_id}%::step::%loop-value%::delay}
+			wait "%{_delay}% seconds" parsed as a timespan
+		
+		if {_type} = "delayscene":
+			while {-cutscenes::player::%{_p}%::inScene} is set:
+				wait 1 tick
