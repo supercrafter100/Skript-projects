@@ -1,0 +1,200 @@
+options:
+	error: &8(&c*&8)
+	success: &8(&a*&8)
+	warning: &8(&e*&8)
+
+command /cutssceneeditor [<string>] [<string>] [<string>] [<string>]:
+	trigger:
+		if player doesn't have permission "cutscenes.command":
+			message "{@error} &7You do not have the required permission to do this."
+			stop
+		
+		if arg 1 = "edit":
+			cuts_sendSceneChatOverview(player, arg 2)
+
+		if arg 1 = "addpoint":
+			set {_id} to arg 2
+			add player's location to {cutscenes::scenes::%{_id}%::controlpoints::*}	
+			cuts_sendSceneChatOverview(player, {_id})
+
+		if arg 1 = "movepointup":
+			set {_id} to arg 2
+			set {_pointIndex} to arg 3
+
+			set {_points::*} to {cutscenes::scenes::%{_id}%::controlpoints::*}
+			set {_pointSize} to size of {_points::*}
+			if {_pointSize} = 1:
+				cuts_sendSceneChatOverview(player, {_id})
+				stop
+			
+			if {_pointIndex} = 1:
+				cuts_sendSceneChatOverview(player, {_id})
+				stop
+			
+			loop {_pointSize} times:
+				if "%loop-number + 1%" = {_pointIndex}:
+					add {_points::%{_pointIndex}%} to {_newPoints::*}
+					add {_points::%loop-number%} to {_newPoints::*}
+				
+				else if "%loop-number%" != {_pointIndex}:
+					add {_points::%loop-number%} to {_newPoints::*}
+
+			set {cutscenes::scenes::%{_id}%::controlpoints::*} to {_newPoints::*}
+			cuts_sendSceneChatOverview(player, {_id})
+
+		if arg 1 = "movepointdown":
+			set {_id} to arg 2
+			set {_pointIndex} to arg 3
+			broadcast "%{_pointIndex}%"
+
+			set {_points::*} to {cutscenes::scenes::%{_id}%::controlpoints::*}
+			set {_pointSize} to size of {_points::*}
+			if {_pointSize} = 1:
+				cuts_sendSceneChatOverview(player, {_id})
+				stop
+			
+			loop {_pointSize} times:
+				if "%loop-number%" = {_pointIndex}:
+					add {_points::%loop-number + 1%} to {_newPoints::*}	
+					add {_points::%{_pointIndex}%} to {_newPoints::*}
+					set {_skip} to {_points::%loop-number + 1%}
+
+				else if {_points::%loop-number%} != {_skip}:
+					add {_points::%loop-number%} to {_newPoints::*}
+			
+			set {cutscenes::scenes::%{_id}%::controlpoints::*} to {_newPoints::*}
+			cuts_sendSceneChatOverview(player, {_id})
+
+		
+		if arg 1 = "deletepoint":
+			set {_id} to arg 2
+			set {_pointIndex} to arg 3
+			set {_points::*} to {cutscenes::scenes::%{_id}%::controlpoints::*}
+			set {_pointSize} to size of {_points::*}
+
+			loop {_pointSize} times:
+				if "%loop-number%" != {_pointIndex}:
+					add {_points::%loop-number%} to {_newPoints::*}
+				else:
+					set {_b} to block at {_points::%loop-number%}
+					make player see {_b} as {_b}
+			
+			set {cutscenes::scenes::%{_id}%::controlpoints::*} to {_newPoints::*}
+			cuts_sendSceneChatOverview(player, {_id})
+
+		if arg 1 = "toggleviewing":
+			set {_id} to arg 2
+			cuts_sendSceneChatOverview(player, arg 2)
+
+			if {-cutscenes::players::%player's uuid%::isViewing} is set:
+				delete {-cutscenes::players::%player's uuid%::isViewing} 
+				message "{@success} &cDisabled &7point viewer"
+			else:
+				set {-cutscenes::players::%player's uuid%::isViewing} to true
+				message "{@success} &aEnabled &7point viewer"
+
+				while {-cutscenes::players::%player's uuid%::isViewing} is set:
+					wait 1 tick
+					loop {cutscenes::scenes::%{_id}%::controlpoints::*}:
+						set {_l} to loop-value
+						
+						set {_b} to block at {_l}
+						make player see {_b} as red wool
+
+						set {_yaw} to yaw of {_l}
+						set {_pitch} to pitch of {_l}
+
+						add 0.5 to y-coordinate of {_l}
+
+						set {_v} to vector from yaw {_yaw} and pitch {_pitch}
+						set {_v} to (normalize {_v}) ** (vector 0.1, 0.1, 0.1)
+						loop 20 times:
+							set {_l} to {_l} ~ {_v}
+							show 0.9 small smoke with speed 0 at {_l}
+					
+					cuts_visualizeScenePath({_id})
+				
+				loop {cutscenes::scenes::%{_id}%::controlpoints::*}:
+					set {_l} to loop-value
+					set {_b} to block at {_l}
+					make player see {_b} as {_b}
+
+
+function cuts_sendSceneChatOverview(p: player, id: string):
+	
+	set {_name} to {cutscenes::scenes::%{_id}%::name}
+	set {_keypoints::*} to {cutscenes::scenes::%{_id}%::controlpoints::*}	
+
+	message "&7==========(&f CutScenes &7)==========" to {_P}
+	message "&f" to {_P}
+	message "&e&l%{_name}%" to {_P}
+	message "&eScene overview" to {_P}
+	message "&8-------------------------------&f" to {_P}
+
+	loop {_keypoints::*}:
+		# Loop-value is a location
+		set {_x} to x-coordinate of loop-value
+		set {_y} to y-coordinate of loop-value
+		set {_z} to z-coordinate of loop-value
+
+		message "&7%loop-index%. &fX: &b%{_x}% &fY: &b%{_y}% &fZ: &b%{_z}% &7| %cuts_stepSceneControls({_id}, loop-index)%" to {_P}
+
+	message "&8-------------------------------" to {_P}
+	message "&eAdd keypoint <ttp:&7Click to add a new keypoint to the scene><command:/cutssceneeditor addpoint %{_id}%>&3[click]" to {_P}
+	message "&eToggle pointviewer <ttp:&7Click to enable/disable the keypoints visualizer><command:/cutssceneeditor toggleviewing %{_id}%>&3[click]" to {_P}
+	message "&e" to {_P}
+	message "&7==========(&f CutScenes &7)==========" to {_P}
+
+function cuts_stepSceneControls(id: string, stepIndex: string) :: string:
+	return "<ttp:&7Click to remove><command:/cutssceneeditor deletepoint %{_id}% %{_stepIndex}%>&c[delete] <ttp:&7Click to move up><command:/cutssceneeditor movepointup %{_id}% %{_stepIndex}%>&3[↑] <ttp:&7Click to move down><command:/cutssceneeditor movepointdown %{_id}% %{_stepIndex}%>&3[↓]"
+
+
+function cuts_visualizeScenePath(id: string):
+	#
+	#	Spline function but shorter
+	#
+	set {_preLocs::*} to {cutscenes::scenes::%{_id}%::controlpoints::*}
+
+	# Add one duplicate loc 1 and final loc
+
+	set {_idx} to 0
+	loop {_preLocs::*}:
+		add 1 to {_idx}
+		if {_idx} = 1:
+			add loop-value to {_locs::*}
+		add loop-value to {_locs::*}
+	
+	set {_size} to size of {_preLocs::*}
+	add {_preLocs::%{_size}%} to {_locs::*}
+
+	set {_subs} to 25
+
+	if size of {_locs::*} >= 4:	
+		set {_sub} to 1 / {_subs}
+
+		set {_world} to world of {_locs::1}
+		set {_s} to size of {_locs::*} - 2
+
+		loop {_locs::*}:
+			loop-index parsed as a number is between 2 and {_s}
+			add 1 to {_i}
+			set {_1} to {_i}th element of {_locs::*}
+			set {_2} to ({_i} + 1)th element of {_locs::*}
+			set {_3} to ({_i} + 2)th element of {_locs::*}
+			set {_4} to ({_i} + 3)th element of {_locs::*}
+			set {_t} to 0
+
+			set {_yaw1} to yaw of {_2}
+			set {_yaw2} to yaw of {_3}
+			set {_pitch1} to pitch of {_2}
+			set {_pitch2} to pitch of {_3}
+
+			loop ({_subs} + 1) times:
+				set {_x} to catmull("%x-loc of {_1}%" parsed as a number, "%x-loc of {_2}%" parsed as a number, "%x-loc of {_3}%" parsed as a number, "%x-loc of {_4}%" parsed as a number, {_t})
+				set {_y} to catmull("%y-loc of {_1}%" parsed as a number, "%y-loc of {_2}%" parsed as a number, "%y-loc of {_3}%" parsed as a number, "%y-loc of {_4}%" parsed as a number, {_t})
+				set {_z} to catmull("%z-loc of {_1}%" parsed as a number, "%z-loc of {_2}%" parsed as a number, "%z-loc of {_3}%" parsed as a number, "%z-loc of {_4}%" parsed as a number, {_t})
+
+				add {_sub} to {_t}
+				set {_loc} to location at {_x}, {_y}, {_z} in world {_world}
+
+				show 0.1 redstone particles at {_loc} with color 255, 0, 0 
