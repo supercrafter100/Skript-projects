@@ -45,7 +45,6 @@ command /cutssceneeditor [<string>] [<string>] [<string>] [<string>]:
 		if arg 1 = "movepointdown":
 			set {_id} to arg 2
 			set {_pointIndex} to arg 3
-			broadcast "%{_pointIndex}%"
 
 			set {_points::*} to {cutscenes::scenes::%{_id}%::controlpoints::*}
 			set {_pointSize} to size of {_points::*}
